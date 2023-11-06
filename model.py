@@ -2,7 +2,7 @@
 import os
 import string
 import json
-from tqmd import tqdm
+from tqdm import tqdm
 import numpy as np
 from umap import UMAP
 from hdbscan import HDBSCAN
@@ -16,7 +16,7 @@ from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_har
 
 ## model definition
 class topicModel():
-    def __init__(self, train_docs:list, test_docs:list, embedding_config:dict, clustering_config:dict, vectorizer_config:dict, ctfidf_config:dict, representation_config:dict, save_dir=""):
+    def __init__(self, train_docs:list, test_docs:list, embedding_config:dict, clustering_config:dict, vectorizer_config=None, ctfidf_config=None, representation_config=None, save_dir=""):
         """
         docs: list (list of documents for topic modelling)
 
@@ -26,14 +26,14 @@ class topicModel():
         clustering_config: dict (contains metadata of the types of clustering models with constructors and hyper-parameters)
             {"hdbscan": {"constructor": model_constructor - callable, "type":"model_type", "params_dict":{"min_cluster_size":[15,20,25], "min_samples":[5,10,15], "cluster_selection_epsilon":[0.4, 0.5, 0.7]}}}
         
-        vectorizer_config: dict (contains metadata of the types of vectorizer models with constructors and hyper-parameters)
-            {}
+        vectorizer_config: dict [default: None] (contains metadata of the types of vectorizer models with constructors and hyper-parameters)
+            {"name": "model_name", "constructor": model_constructor - callable, "params_dict":{"param_1":value, "param_2":value}}
         
-        ctfidf_config: dict (contains metadata of the types of ctf_idf models with constructors and hyper-parameters)
-            {}
+        ctfidf_config: dict [default: None] (contains metadata of the types of ctf_idf models with constructors and hyper-parameters)
+            {"name": "model_name", "constructor": model_constructor - callable, "params_dict":{"param_1":value, "param_2":value}}
 
-        representation_config: dict (contains metadata of the types of representation models with constructors and hyper-parameters)
-            {}
+        representation_config: dict [default: None] (contains metadata of the types of representation models with constructors and hyper-parameters)
+            {"name": "model_name", "constructor": model_constructor - callable, "params_dict":{"param_1":value, "param_2":value}}
         """
 
         self.train_docs = train_docs
@@ -43,7 +43,11 @@ class topicModel():
         
         self.clustering_config = clustering_config
         # self.clustering_dict = {key: {} for key in clustering_config.keys()}
+        self.vectorizer_config = vectorizer_config
+        self.ctfidf_config = ctfidf_config
+        self.representation_config = representation_config
         self.evaluation_dict = {}
+
         self.save_directory = save_dir
         
     ## compute embeddings for each model (reduce calculation of embeddings for each run)
@@ -68,9 +72,9 @@ class topicModel():
         self.save_embeddings()
     
     ## train model
-    def fit(self, docs, embeddings, umap_model, clustering_model, verbose=False):
+    def fit(self, docs, embeddings, umap_model, clustering_model, vectorizer_model, ctfidf_model, representation_model, verbose=False):
         
-        topic_model = BERTopic(umap_model=umap_model, hdbscan_model=clustering_model, calculate_probabilities=True, low_memory=True, verbose=verbose)
+        topic_model = BERTopic(umap_model=umap_model, hdbscan_model=clustering_model, vectorizer_model=vectorizer_model, ctfidf_model=ctfidf_model, representation_model=representation_model, calculate_probabilities=True, low_memory=True, verbose=verbose)
         
         labels, probs = topic_model.fit_transform(docs, embeddings=embeddings)
         # freqs = topic_model.get_topic_info()
@@ -94,6 +98,10 @@ class topicModel():
 
         empty_dimensionality_model = BaseDimensionalityReduction()
 
+        vectorizer_model = self.vectorizer_config["constructor"](*self.vectorizer_config["params_dict"]) if self.vectorizer_config is not None else None
+        ctfidf_model = self.ctfidf_config["constructor"](*self.ctfidf_config["params_dict"]) if self.ctfidf_config is not None else None
+        representation_model = self.representation_config["constructor"](*self.representation_config["params_dict"]) if self.representation_config is not None else None
+
         for model_name in self.embedding_dict.keys():
             
             if model_name not in self.evaluation_dict.keys():
@@ -115,7 +123,7 @@ class topicModel():
                 for param_combo in tqdm(self.clustering_config[cluster_model_name]["params_grid"], desc= model_name + ", " + cluster_model_name):
                     cluster_model = constructor(*param_combo)
 
-                    topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, verbose=verbose)
+                    topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
                     train_scores = self.calculate_scores(train_features, train_labels)
                     evaluation_scores = self.evaluate(self.test_docs, test_features, verbose=verbose)
 
