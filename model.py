@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer
 import tensorflow as tf
 import tensorflow_hub as hub
 from sklearn.model_selection import ParameterGrid
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 
 ## model definition
 class topicModel():
@@ -43,12 +44,14 @@ class topicModel():
         for model_name in self.embedding_dict.keys():
             if self.embedding_dict[model_name]["type"] == "tensorflow":
                 self.embedding_dict[model_name]["model"] = hub.load(self.embedding_dict[model_name]["url"])
-                self.embedding_dict[model_name]["embeddings"] = self.embedding_dict[model_name]["model"](self.docs).numpy()
+                self.embedding_dict[model_name]["train_embeddings"] = self.embedding_dict[model_name]["model"](self.train_docs).numpy()
+                self.embedding_dict[model_name]["test_embeddings"] = self.embedding_dict[model_name]["model"](self.test_docs).numpy()
         
 
             elif self.embedding_dict[model_name]["type"] == "sentence_transformer":
                 self.embedding_dict[model_name]["model"] = SentenceTransformer(self.embedding_dict[model_name]["url"])
-                self.embedding_dict[model_name]["embeddings"] = self.embedding_dict[model_name]["model"].encode(self.docs)
+                self.embedding_dict[model_name]["train_embeddings"] = self.embedding_dict[model_name]["model"].encode(self.train_docs)
+                self.embedding_dict[model_name]["test_embeddings"] = self.embedding_dict[model_name]["model"].encode(self.test_docs)
         
             self.embedding_dict[model_name]["umap_model"] = UMAP(*self.embedding_dict[model_name]["umap_params"])
     
@@ -65,7 +68,7 @@ class topicModel():
         topic_embeddings = topic_model.topic_embeddings_
         hierarchical_topics = topic_model.hierarchical_topics(docs)
         topic_tree = topic_model.get_topic_tree(hierarchical_topics)
-        
+
         return topic_model
 
     ## training loop
@@ -75,7 +78,8 @@ class topicModel():
             self.create_save_dir(save_dir=save_directory)
         
         for model_name in self.embedding_dict.keys():
-            embeddings = self.embedding_dict[model_name]["embeddings"]
+            train_embeddings = self.embedding_dict[model_name]["train_embeddings"]
+            test_embeddings = self.embedding_dict[model_name]["test_embeddings"]
             umap_model = self.embedding_dict[model_name]["umap_model"]
 
             for cluster_model_name in self.clustering_dict.keys():
@@ -87,14 +91,15 @@ class topicModel():
                     for param_combo in self.clustering_dict[cluster_model_name]["params_grid"]:
                         cluster_model = constructor(*param_combo)
 
-                        topic_model = self.fit(self.train_docs, embeddings, umap_model, cluster_model, verbose=verbose)
+                        topic_model = self.fit(self.train_docs, train_embeddings, umap_model, cluster_model, verbose=verbose)
+                        evaluation_scores = self.evaluate(self.test_docs, test_embeddings, verbose=verbose)
                         save_name = ", ".join(str(key) + "=" + str(value) for (key, value) in param_combo.items())
                         save_path = os.path.join(save_directory, model_name, cluster_model_name, save_name)
                         #topic_model.save()
     
     ## evaluate model
-    def test(self, verbose=False):
-        pass
+    def test(self, docs, embeddings, topic_model, verbose=False):
+        test_features = topic_model.umap_model.transform()
     
     ## Save model
     def create_save_dir(self, save_dir):

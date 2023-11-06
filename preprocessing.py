@@ -22,6 +22,6 @@ df_unique.to_excel("data/preprocessed/questions_list_unique.xlsx", index=False)
 
 
 ## Train-Test split
-train_df, test_df = train_test_split(df_unique, random_state=42)
+train_df, test_df = train_test_split(df_unique, test_size=0.1, random_state=42)
 train_df.sort_values("Sr. No").to_excel("data/preprocessed/questions_list_unique_train.xlsx")
 test_df.sort_values("Sr. No").to_excel("data/preprocessed/questions_list_unique_test.xlsx")
