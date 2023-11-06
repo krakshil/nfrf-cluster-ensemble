@@ -21,7 +21,7 @@ class topicModel():
         docs: list (list of documents for topic modelling)
 
         embedding_config: dict (contains metadata of the model and hyper-parameters)
-            {"model_name": {"type":"tensorflow", "url":"url_or_path", "umap":{"n_neighbors":15, "min_dist":0.1, "n_components":2, "metric":"euclidean", "random_state":42}}}
+            {"model_name": {"type":"tensorflow", "url":"url_or_path", "umap_params":{"n_neighbors":15, "min_dist":0.1, "n_components":2, "metric":"euclidean", "random_state":42}}}
         
         clustering_config: dict (contains metadata of the types of clustering models with constructors and hyper-parameters)
             {"hdbscan": {"constructor": model_constructor - callable, "type":"model_type", "params_dict":{"min_cluster_size":[15,20,25], "min_samples":[5,10,15], "cluster_selection_epsilon":[0.4, 0.5, 0.7]}}}
