@@ -65,7 +65,7 @@ class topicModel():
                 self.embedding_dict[model_name]["train_embeddings"] = self.embedding_dict[model_name]["model"].encode(self.train_docs)
                 self.embedding_dict[model_name]["test_embeddings"] = self.embedding_dict[model_name]["model"].encode(self.test_docs)
         
-            self.embedding_dict[model_name]["umap_model"] = UMAP(*self.embedding_config[model_name]["umap_params"])
+            self.embedding_dict[model_name]["umap_model"] = UMAP(**self.embedding_config[model_name]["umap_params"])
             self.embedding_dict[model_name]["train_features"] = self.embedding_dict[model_name]["umap_model"].fit_transform(self.embedding_dict[model_name]["train_embeddings"])
             self.embedding_dict[model_name]["test_features"] = self.embedding_dict[model_name]["umap_model"].transform(self.embedding_dict[model_name]["test_embeddings"])
         
@@ -98,9 +98,9 @@ class topicModel():
 
         empty_dimensionality_model = BaseDimensionalityReduction()
 
-        vectorizer_model = self.vectorizer_config["constructor"](*self.vectorizer_config["params_dict"]) if self.vectorizer_config is not None else None
-        ctfidf_model = self.ctfidf_config["constructor"](*self.ctfidf_config["params_dict"]) if self.ctfidf_config is not None else None
-        representation_model = self.representation_config["constructor"](*self.representation_config["params_dict"]) if self.representation_config is not None else None
+        vectorizer_model = self.vectorizer_config["constructor"](**self.vectorizer_config["params_dict"]) if self.vectorizer_config is not None else None
+        ctfidf_model = self.ctfidf_config["constructor"](**self.ctfidf_config["params_dict"]) if self.ctfidf_config is not None else None
+        representation_model = self.representation_config["constructor"](**self.representation_config["params_dict"]) if self.representation_config is not None else None
 
         for model_name in self.embedding_dict.keys():
             
@@ -121,7 +121,7 @@ class topicModel():
                     self.clustering_config[cluster_model_name]["params_grid"] = params_grid
                 
                 for param_combo in tqdm(self.clustering_config[cluster_model_name]["params_grid"], desc= model_name + ", " + cluster_model_name):
-                    cluster_model = constructor(*param_combo)
+                    cluster_model = constructor(**param_combo)
 
                     topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
                     train_scores = self.calculate_scores(train_features, train_labels)
