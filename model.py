@@ -125,7 +125,7 @@ class topicModel():
 
                     topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
                     train_scores = self.calculate_scores(train_features, train_labels)
-                    evaluation_scores = self.evaluate(self.test_docs, test_features, verbose=verbose)
+                    evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model)
 
                     save_name = ", ".join(str(key) + "=" + str(value) for (key, value) in param_combo.items())
                     self.evaluation_dict[model_name][cluster_model_name][save_name] = np.array([train_scores, evaluation_scores])
