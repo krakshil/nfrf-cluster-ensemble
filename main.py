@@ -16,16 +16,16 @@ save_dir = os.path.join("data", "results")
 
 ## Add UMAP configuration for each embedding model
 embedding_config = {
-    "ST-MiniLM": {"type":"sentence_transformer", "url":"all-MiniLM-L6-v2", "umap_params":{"n_neighbors":0, "min_dist":0, "n_components":0, "metric":""}},
-    "ST-mnpnet": {"type":"sentence_transformer", "url":"all-mpnet-base-v2", "umap_params":{"n_neighbors":0, "min_dist":0, "n_components":0, "metric":""}},
-    "USE": {"type":"tensorflow", "url":"https://tfhub.dev/google/universal-sentence-encoder/4", "umap_params":{"n_neighbors":0, "min_dist":0, "n_components":0, "metric":""}}
+    "ST-MiniLM": {"type":"sentence_transformer", "url":"all-MiniLM-L6-v2", "umap_params":{"n_neighbors":25, "min_dist":0.25, "n_components":10, "metric":"cosine", "low_memory":False}},
+    "ST-mnpnet": {"type":"sentence_transformer", "url":"all-mpnet-base-v2", "umap_params":{"n_neighbors":25, "min_dist":0.25, "n_components":10, "metric":"cosine", "low_memory":False}},
+    "USE": {"type":"tensorflow", "url":"https://tfhub.dev/google/universal-sentence-encoder/4", "umap_params":{"n_neighbors":25, "min_dist":0.25, "n_components":10, "metric":"cosine", "low_memory":False}}
 }
 
 ## Add hyper-parameter combinations
 clustering_config = {
-    "hdbscan": {"constructor":HDBSCAN, "type":"density-based", "params_dict":{"min_cluster_size":[0,0,0], "min_samples":[0,0,0], "cluster_selection_epsilon":[0,0,0], "metric":["",""]}},
-    "birch": {"constructor":Birch, "type":"birch", "params_dict":{"threshold":[0,0,0], "branching_factor":[0,0,0], "n_clusters":[0,0,0]}},
-    "kmeans": {"constructor":KMeans, "type":"k-means", "params_dict":{"n_clusters":[0,0,0], "max_iter":[0,0,0], "n_init":[0,0,0], "algorithm":["",""], "random_state":42}}
+    "hdbscan": {"constructor":HDBSCAN, "type":"density-based", "params_dict":{"min_cluster_size":[6,7,8,9,10,11,12], "min_samples":[1,2,3,4,5], "cluster_selection_epsilon":[0.0, 0.1, 0.2, 0.3, 0.4], "metric":["euclidean","cosine"], "prediction_data":True}},
+    "birch": {"constructor":Birch, "type":"birch", "params_dict":{"threshold":[0.25,0.5, 0.75, 1], "branching_factor":[30, 40, 50, 60, 70], "n_clusters":[6, 7, 8, 9, 10, 11, 12]}},
+    "kmeans": {"constructor":KMeans, "type":"k-means", "params_dict":{"n_clusters":[5, 6, 7, 8, 9, 10, 11, 12, 13], "max_iter":[300, 400, 500], "n_init":[10, 20, 30], "algorithm":["lloyd","elkan"], "random_state":42}}
 }
 vectorizer_config = None
 ctfidf_config = None
