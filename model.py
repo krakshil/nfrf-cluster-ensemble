@@ -133,7 +133,7 @@ class topicModel():
                     save_path = os.path.join(self.save_directory, model_name, cluster_model_name, save_name)
                     topic_model.save(save_path, serialization="pickle", save_embedding_model=False)
 
-                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "params_combo.json"), "W") as f:
+                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "params_combo.json"), "w") as f:
                     f.write(json.dumps(list(self.evaluation_dict[model_name][cluster_model_name].keys())))
                 
                 with open(os.path.join(self.save_directory, model_name, cluster_model_name, "scores.npy"), "wb") as f:
