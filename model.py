@@ -51,25 +51,44 @@ class topicModel():
         self.save_directory = save_dir
         
     ## compute embeddings for each model (reduce calculation of embeddings for each run)
-    def compute_embeddings(self):
+    def compute_embeddings(self, load_embeddings=False):
 
-        for model_name in self.embedding_config.keys():
-            if self.embedding_config[model_name]["type"] == "tensorflow":
-                self.embedding_dict[model_name]["model"] = hub.load(self.embedding_config[model_name]["url"])
-                self.embedding_dict[model_name]["train_embeddings"] = self.embedding_dict[model_name]["model"](self.train_docs).numpy()
-                self.embedding_dict[model_name]["test_embeddings"] = self.embedding_dict[model_name]["model"](self.test_docs).numpy()
-        
+        if load_embeddings:
+            for model_name in self.embedding_config.keys():
+                embeddings = np.load(os.path.join(self.save_directory, model_name, "embeddings.npz"))
+                with open(os.path.join(self.save_directory, model_name, "embedding_dict.json"), "r") as f:
+                    umap_params = json.loads(f.read())["umap_params"]
 
-            elif self.embedding_config[model_name]["type"] == "sentence_transformer":
-                self.embedding_dict[model_name]["model"] = SentenceTransformer(self.embedding_config[model_name]["url"])
-                self.embedding_dict[model_name]["train_embeddings"] = self.embedding_dict[model_name]["model"].encode(self.train_docs)
-                self.embedding_dict[model_name]["test_embeddings"] = self.embedding_dict[model_name]["model"].encode(self.test_docs)
-        
-            self.embedding_dict[model_name]["umap_model"] = UMAP(**self.embedding_config[model_name]["umap_params"])
-            self.embedding_dict[model_name]["train_features"] = self.embedding_dict[model_name]["umap_model"].fit_transform(self.embedding_dict[model_name]["train_embeddings"])
-            self.embedding_dict[model_name]["test_features"] = self.embedding_dict[model_name]["umap_model"].transform(self.embedding_dict[model_name]["test_embeddings"])
-        
-        self.save_embeddings()
+                self.embedding_dict[model_name]["model"] = None
+                self.embedding_dict[model_name]["train_embeddings"] = embeddings["train_embeddings"]
+                self.embedding_dict[model_name]["test_embeddings"] = embeddings["test_embeddings"]
+                self.embedding_dict[model_name]["umap_model"] = UMAP(**self.embedding_config[model_name]["umap_params"])
+
+                if (umap_params == self.embedding_config[model_name]["umap_params"]) and ("random_state" in umap_params):
+                    self.embedding_dict[model_name]["train_features"] = embeddings["train_features"]
+                    self.embedding_dict[model_name]["test_features"] = embeddings["test_features"]
+                else:
+                    self.embedding_dict[model_name]["train_features"] = self.embedding_dict[model_name]["umap_model"].fit_transform(self.embedding_dict[model_name]["train_embeddings"])
+                    self.embedding_dict[model_name]["test_features"] = self.embedding_dict[model_name]["umap_model"].transform(self.embedding_dict[model_name]["test_embeddings"])
+
+        else:
+            for model_name in self.embedding_config.keys():
+                if self.embedding_config[model_name]["type"] == "tensorflow":
+                    self.embedding_dict[model_name]["model"] = hub.load(self.embedding_config[model_name]["url"])
+                    self.embedding_dict[model_name]["train_embeddings"] = self.embedding_dict[model_name]["model"](self.train_docs).numpy()
+                    self.embedding_dict[model_name]["test_embeddings"] = self.embedding_dict[model_name]["model"](self.test_docs).numpy()
+            
+
+                elif self.embedding_config[model_name]["type"] == "sentence_transformer":
+                    self.embedding_dict[model_name]["model"] = SentenceTransformer(self.embedding_config[model_name]["url"])
+                    self.embedding_dict[model_name]["train_embeddings"] = self.embedding_dict[model_name]["model"].encode(self.train_docs)
+                    self.embedding_dict[model_name]["test_embeddings"] = self.embedding_dict[model_name]["model"].encode(self.test_docs)
+            
+                self.embedding_dict[model_name]["umap_model"] = UMAP(**self.embedding_config[model_name]["umap_params"])
+                self.embedding_dict[model_name]["train_features"] = self.embedding_dict[model_name]["umap_model"].fit_transform(self.embedding_dict[model_name]["train_embeddings"])
+                self.embedding_dict[model_name]["test_features"] = self.embedding_dict[model_name]["umap_model"].transform(self.embedding_dict[model_name]["test_embeddings"])
+            
+            self.save_embeddings()
     
     ## train model
     def fit(self, docs, embeddings, umap_model, clustering_model, vectorizer_model, ctfidf_model, representation_model, verbose=False):
@@ -94,7 +113,7 @@ class topicModel():
         self.create_save_dir()
         print("[INFO] Directories created. Computing embeddings and features from the documents using embedding models...")
         self.compute_embeddings()
-        print("[INFO] Embeddings Calculated and saved. Starting iterations of topic modelling...")
+        print("[INFO] Embeddings Calculated and saved. Starting iterations of topic modelling...\n")
 
         empty_dimensionality_model = BaseDimensionalityReduction()
 
@@ -111,6 +130,8 @@ class topicModel():
             test_features = self.embedding_dict[model_name]["test_features"]
 
             for cluster_model_name in self.clustering_config.keys():
+                
+                num_cluster_count = {} if cluster_model_name == "hdbscan" else None
 
                 if cluster_model_name not in self.evaluation_dict[model_name].keys():
                     self.evaluation_dict[model_name][cluster_model_name] = {}
@@ -127,6 +148,8 @@ class topicModel():
                     train_scores = self.calculate_scores(train_features, train_labels)
                     evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model)
 
+                    num_cluster_count[param_combo] = topic_model.get_topic_info().shape[0]
+
                     save_name = ", ".join(str(key) + "=" + str(value) for (key, value) in param_combo.items())
                     self.evaluation_dict[model_name][cluster_model_name][save_name] = np.array([train_scores, evaluation_scores])
                     
@@ -134,14 +157,17 @@ class topicModel():
                     topic_model.save(save_path, serialization="pickle", save_embedding_model=False)
 
                 with open(os.path.join(self.save_directory, model_name, cluster_model_name, "params_combo.json"), "w") as f:
-                    f.write(json.dumps(list(self.evaluation_dict[model_name][cluster_model_name].keys())))
+                    json.dump(list(self.evaluation_dict[model_name][cluster_model_name].keys()), f)
                 
                 with open(os.path.join(self.save_directory, model_name, cluster_model_name, "scores.npy"), "wb") as f:
                     np.save(f, np.array(list(self.evaluation_dict[model_name][cluster_model_name].values())))
                 
-                print("[INFO] " + model_name + ", " + cluster_model_name + ": Complete. Moving to next model...")
+                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "num_clusters.json"), "w") as f:
+                    json.dump(num_cluster_count, f)
+
+                print("[INFO] " + model_name + ", " + cluster_model_name + ": Complete. Moving to next model...\n")
             
-            print("[INFO] " + model_name + ": Completed.")
+            print("[INFO] " + model_name + ": Completed.\n")
         
         print("All iterations complete. All the data was stored.")
                 
@@ -159,9 +185,13 @@ class topicModel():
     ## Save model
     def create_save_dir(self):
         
+        load_embeddings = None
+
         for model_name in self.embedding_config.keys():
             for cluster_model_name in self.clustering_config.keys():
                 os.makedirs(os.path.join(self.save_directory, model_name, cluster_model_name), exist_ok=True)
+        
+        return load_embeddings
     
     ## save embeddings
     def save_embeddings(self):
@@ -181,3 +211,24 @@ class topicModel():
             
             with open(os.path.join(self.save_directory, model_name, "embedding_dict.json"), "w") as f:
                 f.write(json.dumps(self.embedding_config[model_name]))
+    
+    ## find best hyper-parameter combination for each clustering algo in each embedding space
+    def save_best_scores(self):
+        best_scores = {}
+        for model_name in self.embedding_dict.keys():
+            best_scores[model_name] = {}
+            for cluster_model_name in self.clustering_config.keys():
+                
+                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "params_combo.json"), "r") as f:
+                    params_combo = json.loads(f.read())
+                
+                scores = np.load(os.path.join(self.save_directory, model_name, cluster_model_name, "scores.npy"))
+
+                ### best scores - incomplete
+                best_parameter_combo = None
+                best_score = None
+
+                best_scores[model_name][cluster_model_name] = {best_parameter_combo:best_score}
+        
+        with open(os.path.join(self.save_directory, "best_scores.json"), "w") as f:
+            json.dump(best_scores, f)
