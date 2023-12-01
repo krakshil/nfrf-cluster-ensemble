@@ -11,8 +11,27 @@ from bertopic.dimensionality import BaseDimensionalityReduction
 from sentence_transformers import SentenceTransformer
 import tensorflow as tf
 import tensorflow_hub as hub
+from sklearn.cluster import SpectralClustering
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
+
+
+## Spectral clustering
+class CustomSpectralClustering:
+    def __init__(self, n_clusters=3, **kwargs):
+        self.model = SpectralClustering(n_clusters=n_clusters, **kwargs)
+        self.classifier = None
+
+    def fit_predict(self, X):
+        self.labels = self.model.fit_predict(X)
+        self.classifier = KNeighborsClassifier(n_neighbors=3)
+        self.classifier.fit(X, self.labels)
+        return self.labels
+
+    def predict(self, X_new):
+        return self.classifier.predict(X_new)
+
 
 ## model definition
 class topicModel():
@@ -214,6 +233,10 @@ class topicModel():
     
     ## find best hyper-parameter combination for each clustering algo in each embedding space
     def save_best_scores(self):
+
+        def normalize(value, min_val, max_val):
+            return ((value - min_val) / (max_val - min_val))
+
         best_scores = {}
         for model_name in self.embedding_dict.keys():
             best_scores[model_name] = {}
@@ -225,8 +248,17 @@ class topicModel():
                 scores = np.load(os.path.join(self.save_directory, model_name, cluster_model_name, "scores.npy"))
 
                 ### best scores - incomplete
-                best_parameter_combo = None
-                best_score = None
+                normalized_scores = scores.copy()
+                normalized_scores[:,:, 1] = (1 / (1 + normalized_scores[:,:, 1]))
+                max_c_score, min_c_score = normalized_scores[:,:, 2].max(), normalized_scores[:,:, 2].min()
+                normalize_vfunc = np.vectorize(normalize)
+                normalized_scores[:, :, 2] = normalize_vfunc(normalized_scores[:, :, 2], min_c_score, max_c_score)
+
+                normalized_scores = np.sum(normalized_scores, axis=2)
+                best_score_index = np.argmax(normalized_scores[:, 1])
+
+                best_parameter_combo = params_combo[best_score_index]
+                best_score = normalized_scores[best_score_index, 1]
 
                 best_scores[model_name][cluster_model_name] = {best_parameter_combo:best_score}
         

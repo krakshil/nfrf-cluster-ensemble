@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans, Birch
-from model import topicModel
+from model import topicModel, CustomSpectralClustering
 
 data_dir = os.path.join("data", "preprocessed")
 train_file = "questions_list_unique_train.xlsx"
@@ -25,8 +25,10 @@ embedding_config = {
 clustering_config = {
     "hdbscan": {"constructor":HDBSCAN, "type":"density-based", "params_dict":{"min_cluster_size":[6,7,8,9,10,11,12], "min_samples":[1,2,3,4,5], "cluster_selection_epsilon":[0.0, 0.1, 0.2, 0.3, 0.4], "metric":["euclidean","manhattan"], "prediction_data":[True]}},
     "birch": {"constructor":Birch, "type":"birch", "params_dict":{"threshold":[0.25,0.5, 0.75, 1], "branching_factor":[30, 40, 50, 60, 70], "n_clusters":[6, 7, 8, 9, 10, 11, 12]}},
-    "kmeans": {"constructor":KMeans, "type":"k-means", "params_dict":{"n_clusters":[5, 6, 7, 8, 9, 10, 11, 12, 13], "max_iter":[300, 400, 500], "n_init":[10, 20, 30], "algorithm":["lloyd","elkan"], "random_state":[42]}}
+    "kmeans": {"constructor":KMeans, "type":"k-means", "params_dict":{"n_clusters":[5, 6, 7, 8, 9, 10, 11, 12, 13], "max_iter":[300, 400, 500], "n_init":[10, 20, 30], "algorithm":["lloyd","elkan"], "random_state":[42]}},
+    "spectral": {"constructor":CustomSpectralClustering, "type":"spectral", "params_dict":{"n_clusters":[5, 6, 7, 8, 9, 10, 11, 12, 13], "max_iter":[300, 400, 500], "n_init":[10, 20, 30], "algorithm":["lloyd","elkan"], "random_state":[42]}}
 }
+
 vectorizer_config = None
 ctfidf_config = None
 representation_config = None
