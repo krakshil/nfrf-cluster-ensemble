@@ -37,8 +37,8 @@ class CustomGaussianMixture:
     def __init__(self, n_components=5, **kwargs):
         self.model = GaussianMixture(n_components=n_components, **kwargs)
 
-    def fit(self, X):
-        self.labels_ = self.model.fit_predict(X)
+    def fit(self, X, y):
+        self.labels_ = self.model.fit_predict(X, y=y)
         return self
 
     def predict(self, X_new):

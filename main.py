@@ -34,8 +34,8 @@ clustering_config = {
                                                                                            {"n_clusters":[5, 6, 7, 8, 9, 10], "n_components":[3,5,7], "affinity":["polynomial"], "degree":[3,4,5,6,7], "assign_labels":["kmeans","discretize", "cluster_qr"], "random_state":[42]},
                                                                                            ]},
     
-    "guassian": {"constructor":CustomGaussianMixture, "type":"guassian", "params_dict":[{"n_components":[5, 6, 7, 8, 9, 10], "covariance_type":["full", "tied", "diag", "spherical"], "tol":[1e-6, 1e-5, 1e-4, 1e-3, 1e-2], "max_iter":[100, 200, 300], "n_init":[1, 10, 50], "init_params":["k-means++", "random_from_data"], "random_state":[42]},
-                                                                                  {"n_components":[5, 6, 7, 8, 9, 10], "covariance_type":["full", "tied", "diag", "spherical"], "tol":[1e-6, 1e-5, 1e-4, 1e-3, 1e-2], "max_iter":[100, 200, 300], "warm_start":[True], "init_params":["k-means++", "random_from_data"], "random_state":[42]},
+    "guassian": {"constructor":CustomGaussianMixture, "type":"guassian", "params_dict":[{"n_components":[5, 6, 7, 8, 9, 10], "covariance_type":["full", "tied", "diag", "spherical"], "tol":[1e-6, 1e-5, 1e-4, 1e-3, 1e-2], "n_init":[1, 10, 50], "init_params":["k-means++", "random_from_data"], "reg_covar":[1e-4], "random_state":[42]},
+                                                                                  {"n_components":[5, 6, 7, 8, 9, 10], "covariance_type":["full", "tied", "diag", "spherical"], "tol":[1e-6, 1e-5, 1e-4, 1e-3, 1e-2], "warm_start":[True], "init_params":["k-means++", "random_from_data"], "reg_covar":[1e-4], "random_state":[42]},
                                                                                   ]},
 }
 
