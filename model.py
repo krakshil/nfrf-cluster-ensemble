@@ -12,6 +12,7 @@ from sentence_transformers import SentenceTransformer
 import tensorflow as tf
 import tensorflow_hub as hub
 from sklearn.cluster import SpectralClustering
+from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
@@ -21,16 +22,27 @@ from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_har
 class CustomSpectralClustering:
     def __init__(self, n_clusters=3, **kwargs):
         self.model = SpectralClustering(n_clusters=n_clusters, **kwargs)
-        self.classifier = None
+        self.classifier = KNeighborsClassifier(n_neighbors=10)
 
-    def fit_predict(self, X):
-        self.labels = self.model.fit_predict(X)
-        self.classifier = KNeighborsClassifier(n_neighbors=3)
-        self.classifier.fit(X, self.labels)
-        return self.labels
+    def fit(self, X):
+        self.labels_ = self.model.fit_predict(X)
+        self.classifier.fit(X, self.labels_)
+        return self
 
     def predict(self, X_new):
         return self.classifier.predict(X_new)
+
+
+class CustomGaussianMixture:
+    def __init__(self, n_components=5, **kwargs):
+        self.model = GaussianMixture(n_components=n_components, **kwargs)
+
+    def fit(self, X):
+        self.labels_ = self.model.fit_predict(X)
+        return self
+
+    def predict(self, X_new):
+        return self.model.predict(X_new)
 
 
 ## model definition
@@ -126,12 +138,12 @@ class topicModel():
         return topic_model, (labels, probs)
 
     ## training loop
-    def run(self, verbose=False):
+    def run(self, load_embeddings=False, verbose=False):
         
         print("[INFO] Creating directory heirarchy for storing data and results...")
         self.create_save_dir()
         print("[INFO] Directories created. Computing embeddings and features from the documents using embedding models...")
-        self.compute_embeddings()
+        self.compute_embeddings(load_embeddings=load_embeddings)
         print("[INFO] Embeddings Calculated and saved. Starting iterations of topic modelling...\n")
 
         empty_dimensionality_model = BaseDimensionalityReduction()
@@ -150,7 +162,7 @@ class topicModel():
 
             for cluster_model_name in self.clustering_config.keys():
                 
-                num_cluster_count = {} if cluster_model_name == "hdbscan" else None
+                num_cluster_count = {} if (cluster_model_name == "hdbscan") or (cluster_model_name == "birch") else None
 
                 if cluster_model_name not in self.evaluation_dict[model_name].keys():
                     self.evaluation_dict[model_name][cluster_model_name] = {}
@@ -164,12 +176,17 @@ class topicModel():
                     cluster_model = constructor(**param_combo)
 
                     topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
-                    train_scores = self.calculate_scores(train_features, train_labels)
-                    evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model)
-
-                    num_cluster_count[param_combo] = topic_model.get_topic_info().shape[0]
-
                     save_name = ", ".join(str(key) + "=" + str(value) for (key, value) in param_combo.items())
+                    
+                    if num_cluster_count is not None:
+                        num_cluster_count[save_name] = topic_model.get_topic_info().shape[0]
+
+                    if topic_model.get_topic_info().shape[0] > 2:
+                        train_scores = self.calculate_scores(train_features, train_labels)
+                        evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model)
+                    else:
+                        train_scores, evaluation_scores = (-2, -1, -1), (-2, -1, -1)
+
                     self.evaluation_dict[model_name][cluster_model_name][save_name] = np.array([train_scores, evaluation_scores])
                     
                     save_path = os.path.join(self.save_directory, model_name, cluster_model_name, save_name)
@@ -181,8 +198,9 @@ class topicModel():
                 with open(os.path.join(self.save_directory, model_name, cluster_model_name, "scores.npy"), "wb") as f:
                     np.save(f, np.array(list(self.evaluation_dict[model_name][cluster_model_name].values())))
                 
-                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "num_clusters.json"), "w") as f:
-                    json.dump(num_cluster_count, f)
+                if num_cluster_count is not None:
+                    with open(os.path.join(self.save_directory, model_name, cluster_model_name, "num_clusters.json"), "w") as f:
+                        json.dump(num_cluster_count, f)
 
                 print("[INFO] " + model_name + ", " + cluster_model_name + ": Complete. Moving to next model...\n")
             
@@ -198,8 +216,11 @@ class topicModel():
         return (s_score, d_score, c_score)
 
     def calculate_scores(self, features, labels):
-        s_score, d_score, c_score = silhouette_score(X=features, labels=labels), davies_bouldin_score(X=features, labels=labels), calinski_harabasz_score(X=features, labels=labels)
-        return s_score, d_score, c_score
+        try:
+            s_score, d_score, c_score = silhouette_score(X=features, labels=labels), davies_bouldin_score(X=features, labels=labels), calinski_harabasz_score(X=features, labels=labels), False
+        except:
+            s_score, d_score, c_score = -2, -1, -1
+        return (s_score, d_score, c_score)
     
     ## Save model
     def create_save_dir(self):
