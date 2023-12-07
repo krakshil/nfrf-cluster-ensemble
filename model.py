@@ -193,7 +193,7 @@ class topicModel():
         try:
             s_score, d_score, c_score = silhouette_score(X=features, labels=labels), davies_bouldin_score(X=features, labels=labels), calinski_harabasz_score(X=features, labels=labels)
         except:
-            s_score, d_score, c_score = -2, -1, -1
+            s_score, d_score, c_score = -1, float('inf'), 0
         return (s_score, d_score, c_score)
 
     ## calculate evaluation scores for all models
@@ -224,7 +224,7 @@ class topicModel():
                     if file_name in cluster_model_combos:
                         cluster_model_combos.remove(file_name)
 
-                for cluster_model_combination in tqdm(cluster_model_combos, desc = model_name + ", " + cluster_model_name):
+                for cluster_model_combination in tqdm(cluster_model_combos  , desc = model_name + ", " + cluster_model_name):
                     
                     topic_model = BERTopic.load(os.path.join(cluster_model_path, cluster_model_combination))
 
@@ -234,7 +234,7 @@ class topicModel():
                         train_scores = self.evaluate(self.train_docs, train_features, topic_model)
                         evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model)
                     else:
-                        train_scores, evaluation_scores = (-2, -1, -1), (-2, -1, -1)
+                        train_scores, evaluation_scores = (-1, float('inf'), 0), (-1, float('inf'), 0)
 
                     self.evaluation_dict[model_name][cluster_model_name][cluster_model_combination] = np.array([train_scores, evaluation_scores])
 
@@ -301,12 +301,12 @@ class topicModel():
                 
                 scores = np.load(os.path.join(self.save_directory, model_name, cluster_model_name, "scores.npy"))
 
-                ### best scores - incomplete
+                ### best scores - incomplete (problematic combinations (score error) not totally excluded in best score calculation (c-score range -1))
                 normalized_scores = scores.copy()
                 normalized_scores[:,:, 1] = np.divide(1,np.add(1, normalized_scores[:,:, 1]))
-                normalized_scores[normalized_scores == np.divide(1,0)] = -np.divide(1,0)
+                # normalized_scores[normalized_scores == np.divide(1,0)] = -np.divide(1,0)
                 max_c_score, min_c_score = normalized_scores[:,:, 2].max(), normalized_scores[:,:, 2].min()
-                print(model_name, cluster_model_name, max_c_score, min_c_score)
+                # print(model_name, cluster_model_name, max_c_score, min_c_score)
                 normalize_vfunc = np.vectorize(normalize)
                 normalized_scores[:, :, 2] = normalize_vfunc(normalized_scores[:, :, 2], min_c_score, max_c_score)
 
@@ -316,7 +316,7 @@ class topicModel():
                 best_parameter_combo = params_combo[best_score_index]
                 best_score = normalized_scores[best_score_index, 1]
 
-                best_scores[model_name][cluster_model_name] = {best_parameter_combo:best_score}
+                best_scores[model_name][cluster_model_name] = {best_parameter_combo:{"best_score":best_score, "train_scores": scores[best_score_index, 0].tolist(), "test_scores": scores[best_score_index, 1].tolist()}}
         
         with open(os.path.join(self.save_directory, "best_scores.json"), "w") as f:
             json.dump(best_scores, f)
