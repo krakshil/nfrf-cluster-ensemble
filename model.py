@@ -162,45 +162,19 @@ class topicModel():
 
             for cluster_model_name in self.clustering_config.keys():
                 
-                num_cluster_count = {} if (cluster_model_name == "hdbscan") or (cluster_model_name == "birch") else None
-
-                if cluster_model_name not in self.evaluation_dict[model_name].keys():
-                    self.evaluation_dict[model_name][cluster_model_name] = {}
-
                 constructor = self.clustering_config[cluster_model_name]["constructor"]
                 if "params_grid" not in self.clustering_config[cluster_model_name].keys():
                     params_grid = list(ParameterGrid(self.clustering_config[cluster_model_name]["params_dict"]))
                     self.clustering_config[cluster_model_name]["params_grid"] = params_grid
                 
-                for param_combo in tqdm(self.clustering_config[cluster_model_name]["params_grid"], desc= model_name + ", " + cluster_model_name):
+                for param_combo in tqdm(self.clustering_config[cluster_model_name]["params_grid"], desc = model_name + ", " + cluster_model_name):
                     cluster_model = constructor(**param_combo)
 
                     topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
                     save_name = ", ".join(str(key) + "=" + str(value) for (key, value) in param_combo.items())
-                    
-                    if num_cluster_count is not None:
-                        num_cluster_count[save_name] = topic_model.get_topic_info().shape[0]
 
-                    if topic_model.get_topic_info().shape[0] > 2:
-                        train_scores = self.calculate_scores(train_features, train_labels)
-                        evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model)
-                    else:
-                        train_scores, evaluation_scores = (-2, -1, -1), (-2, -1, -1)
-
-                    self.evaluation_dict[model_name][cluster_model_name][save_name] = np.array([train_scores, evaluation_scores])
-                    
                     save_path = os.path.join(self.save_directory, model_name, cluster_model_name, save_name)
                     topic_model.save(save_path, serialization="pickle", save_embedding_model=False)
-
-                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "params_combo.json"), "w") as f:
-                    json.dump(list(self.evaluation_dict[model_name][cluster_model_name].keys()), f)
-                
-                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "scores.npy"), "wb") as f:
-                    np.save(f, np.array(list(self.evaluation_dict[model_name][cluster_model_name].values())))
-                
-                if num_cluster_count is not None:
-                    with open(os.path.join(self.save_directory, model_name, cluster_model_name, "num_clusters.json"), "w") as f:
-                        json.dump(num_cluster_count, f)
 
                 print("[INFO] " + model_name + ", " + cluster_model_name + ": Complete. Moving to next model...\n")
             
@@ -217,10 +191,67 @@ class topicModel():
 
     def calculate_scores(self, features, labels):
         try:
-            s_score, d_score, c_score = silhouette_score(X=features, labels=labels), davies_bouldin_score(X=features, labels=labels), calinski_harabasz_score(X=features, labels=labels), False
+            s_score, d_score, c_score = silhouette_score(X=features, labels=labels), davies_bouldin_score(X=features, labels=labels), calinski_harabasz_score(X=features, labels=labels)
         except:
             s_score, d_score, c_score = -2, -1, -1
         return (s_score, d_score, c_score)
+
+    ## calculate evaluation scores for all models
+    def get_evaluation_scores(self, load_embeddings=False):
+        
+        print("\n\n[INFO] Beginning evaluation ...\n")
+        for model_name in self.embedding_dict.keys():
+            
+            if model_name not in self.evaluation_dict.keys():
+                self.evaluation_dict[model_name] = {}
+
+            if ("train_features" not in self.embedding_dict[model_name].keys()) or ("test_features" not in self.embedding_dict[model_name].keys()):
+                self.compute_embeddings(load_embeddings=load_embeddings)
+            
+            train_features = self.embedding_dict[model_name]["train_features"]
+            test_features = self.embedding_dict[model_name]["test_features"]
+
+            for cluster_model_name in self.clustering_config.keys():
+                
+                if cluster_model_name not in self.evaluation_dict[model_name].keys():
+                    self.evaluation_dict[model_name][cluster_model_name] = {}
+
+                num_cluster_count = {}
+                cluster_model_path = os.path.join(self.save_directory, model_name, cluster_model_name)
+                cluster_model_combos = os.listdir(cluster_model_path)
+                
+                for file_name in ["num_clusters.json","params_combo.json","scores.npy"]:
+                    if file_name in cluster_model_combos:
+                        cluster_model_combos.remove(file_name)
+
+                for cluster_model_combination in tqdm(cluster_model_combos, desc = model_name + ", " + cluster_model_name):
+                    
+                    topic_model = BERTopic.load(os.path.join(cluster_model_path, cluster_model_combination))
+
+                    num_cluster_count[cluster_model_combination] = topic_model.get_topic_info().shape[0]
+
+                    if topic_model.get_topic_info().shape[0] > 2:
+                        train_scores = self.evaluate(self.train_docs, train_features, topic_model)
+                        evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model)
+                    else:
+                        train_scores, evaluation_scores = (-2, -1, -1), (-2, -1, -1)
+
+                    self.evaluation_dict[model_name][cluster_model_name][cluster_model_combination] = np.array([train_scores, evaluation_scores])
+
+                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "params_combo.json"), "w") as f:
+                    json.dump(list(self.evaluation_dict[model_name][cluster_model_name].keys()), f)
+                
+                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "scores.npy"), "wb") as f:
+                    np.save(f, np.array(list(self.evaluation_dict[model_name][cluster_model_name].values())))
+                
+                with open(os.path.join(self.save_directory, model_name, cluster_model_name, "num_clusters.json"), "w") as f:
+                    json.dump(num_cluster_count, f)
+                
+                print("[INFO] " + model_name + ", " + cluster_model_name + ": Complete. Moving to next model...\n")
+
+            print("[INFO] " + model_name + ": Completed.\n")
+        
+        print("Evaluation complete. All the scores were stored.")
     
     ## Save model
     def create_save_dir(self):
@@ -251,9 +282,11 @@ class topicModel():
             
             with open(os.path.join(self.save_directory, model_name, "embedding_dict.json"), "w") as f:
                 f.write(json.dumps(self.embedding_config[model_name]))
-    
+
     ## find best hyper-parameter combination for each clustering algo in each embedding space
     def save_best_scores(self):
+        
+        print("\n\n[INFO] Calculating best scores from all hyper-parameter combinations for all model types ...")
 
         def normalize(value, min_val, max_val):
             return ((value - min_val) / (max_val - min_val))
@@ -270,8 +303,10 @@ class topicModel():
 
                 ### best scores - incomplete
                 normalized_scores = scores.copy()
-                normalized_scores[:,:, 1] = (1 / (1 + normalized_scores[:,:, 1]))
+                normalized_scores[:,:, 1] = np.divide(1,np.add(1, normalized_scores[:,:, 1]))
+                normalized_scores[normalized_scores == np.divide(1,0)] = -np.divide(1,0)
                 max_c_score, min_c_score = normalized_scores[:,:, 2].max(), normalized_scores[:,:, 2].min()
+                print(model_name, cluster_model_name, max_c_score, min_c_score)
                 normalize_vfunc = np.vectorize(normalize)
                 normalized_scores[:, :, 2] = normalize_vfunc(normalized_scores[:, :, 2], min_c_score, max_c_score)
 
@@ -285,3 +320,5 @@ class topicModel():
         
         with open(os.path.join(self.save_directory, "best_scores.json"), "w") as f:
             json.dump(best_scores, f)
+        
+        print("[INFO] Best models found and information was stored.")
