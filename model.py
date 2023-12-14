@@ -1,9 +1,11 @@
 ## import packages
 import os
 import string
+import glob
 import json
 from tqdm import tqdm
 import numpy as np
+import pandas as pd
 from umap import UMAP
 from hdbscan import HDBSCAN
 from bertopic import BERTopic
@@ -15,7 +17,7 @@ from sklearn.cluster import SpectralClustering
 from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import ParameterGrid
-from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score, adjusted_rand_score, adjusted_mutual_info_score
 
 
 ## Spectral clustering
@@ -86,7 +88,7 @@ class topicModel():
 
         if load_embeddings:
             for model_name in self.embedding_config.keys():
-                embeddings = np.load(os.path.join(self.save_directory, model_name, "embeddings.npz"))
+                embeddings = np.load(os.path.join(self.save_directory, model_name, "embeddings_v1.npz"))
                 with open(os.path.join(self.save_directory, model_name, "embedding_dict.json"), "r") as f:
                     umap_params = json.loads(f.read())["umap_params"]
 
@@ -184,22 +186,38 @@ class topicModel():
                 
     
     ## evaluate model
-    def evaluate(self, docs, embeddings, topic_model):
-        labels, probs = topic_model.transform(docs, embeddings)
-        s_score, d_score, c_score = self.calculate_scores(features=embeddings, labels=labels)
-        return (s_score, d_score, c_score)
+    def evaluate(self, docs, embeddings, topic_model, gt_labels=None):
+        preds, probs = topic_model.transform(docs, embeddings)
+        s_score, d_score, c_score = self.calculate_internal_scores(features=embeddings, labels=preds)
+        external_scores = []
+        for labels in gt_labels:
+            external_scores.append(self.calculate_external_scores(gt=labels, pred=preds))
+        external_scores = np.mean(external_scores, axis=0)
+        return (s_score, d_score, c_score, external_scores[0], external_scores[1])
 
-    def calculate_scores(self, features, labels):
+    ## calculate internal metrics for a model
+    def calculate_internal_scores(self, features, labels):
         try:
             s_score, d_score, c_score = silhouette_score(X=features, labels=labels), davies_bouldin_score(X=features, labels=labels), calinski_harabasz_score(X=features, labels=labels)
         except:
             s_score, d_score, c_score = -1, float('inf'), 0
         return (s_score, d_score, c_score)
 
+    ## calculate external metrics for a model
+    def calculate_external_scores(self, gt, pred):
+        try:
+            ari_score, mi_score = adjusted_rand_score(gt, pred), adjusted_mutual_info_score(gt, pred)
+        except:
+            ari_score, mi_score = 0, 0
+        return (ari_score, mi_score)
+
     ## calculate evaluation scores for all models
-    def get_evaluation_scores(self, load_embeddings=False):
+    def get_evaluation_scores(self, load_embeddings=False, gt_dir=""):
         
         print("\n\n[INFO] Beginning evaluation ...\n")
+
+        gt_labels = self.load_gt_labels(gt_dir=gt_dir)
+
         for model_name in self.embedding_dict.keys():
             
             if model_name not in self.evaluation_dict.keys():
@@ -231,10 +249,10 @@ class topicModel():
                     num_cluster_count[cluster_model_combination] = topic_model.get_topic_info().shape[0]
 
                     if topic_model.get_topic_info().shape[0] > 2:
-                        train_scores = self.evaluate(self.train_docs, train_features, topic_model)
-                        evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model)
+                        train_scores = self.evaluate(self.train_docs, train_features, topic_model, gt_labels)
+                        evaluation_scores = self.evaluate(self.test_docs, test_features, topic_model, gt_labels)
                     else:
-                        train_scores, evaluation_scores = (-1, float('inf'), 0), (-1, float('inf'), 0)
+                        train_scores, evaluation_scores = (-1, float('inf'), 0, 0, 0), (-1, float('inf'), 0, 0, 0)
 
                     self.evaluation_dict[model_name][cluster_model_name][cluster_model_combination] = np.array([train_scores, evaluation_scores])
 
@@ -252,7 +270,15 @@ class topicModel():
             print("[INFO] " + model_name + ": Completed.\n")
         
         print("Evaluation complete. All the scores were stored.")
-    
+
+    ## load gt-labels
+    def load_gt_labels(self, gt_dir=""):
+        gt_labels = []
+        for file_path in glob.glob(os.path.join(gt_dir,"annotations", "*_labelled.xlsx")):
+            df = pd.read_excel(file_path)
+            gt_labels.append(df["labels"].tolist())
+        return np.array(gt_labels)
+
     ## Save model
     def create_save_dir(self):
         
