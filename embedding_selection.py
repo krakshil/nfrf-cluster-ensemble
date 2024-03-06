@@ -127,7 +127,7 @@ class topicModel():
         representation_model = None
 
         num_total_variants = len(list(self.embedding_selection_dict.keys()))*len(self.embedding_selection_umap_params_list)*len(self.embedding_selection_hdbscan_params_list)
-        model_idx, umap_idx, hdb_idx = 0
+        model_idx, umap_idx, hdb_idx = 0, 0, 0
         # try:
         with tqdm(total=num_total_variants, desc="Progress") as pbar:
             
