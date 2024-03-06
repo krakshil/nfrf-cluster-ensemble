@@ -19,8 +19,8 @@ save_dir = "data"
 ## Add hyper-parameter combinations for embedding selection
 embedding_selection_config = {
     "embedding_models": {"ST-MiniLM": ["sentence_transformer", "all-MiniLM-L6-v2"]},
-    "umap_params_dict": {"n_neighbors":[25], "min_dist":[0.25], "n_components":[10], "metric":["cosine"], "low_memory":[False], "random_state":[42]},
-    "hdbscan_params_dict": {"min_cluster_size":[30], "min_samples":[20], "cluster_selection_epsilon":[0.7], "metric":["euclidean"], "prediction_data":[True]}
+    "umap_params_dict": {"n_neighbors":[25,30], "min_dist":[0.25], "n_components":[10,20], "metric":["cosine"], "low_memory":[False], "random_state":[42]},
+    "hdbscan_params_dict": {"min_cluster_size":[30,40], "min_samples":[20,30], "cluster_selection_epsilon":[0.7], "metric":["euclidean"], "prediction_data":[True]}
 }
 
 
