@@ -24,7 +24,7 @@ embedding_selection_config = {
                          "ST-distil-roberta": ["sentence_transformer","all-distilroberta-v1"],
                          "ST-mpnet-qa": ["sentence_transformer","multi-qa-mpnet-base-dot-v1"],
                          "ST-t5-base": ["sentence_transformer","sentence-t5-base"],
-                         "ST-t5-base": ["sentence_transformer","LaBSE"],
+                         "ST-LaBSE": ["sentence_transformer","LaBSE"],
                          "USE": ["tensorflow","https://tfhub.dev/google/universal-sentence-encoder/4"]},
     "umap_params_dict": {"n_neighbors":[5, 10, 15, 20, 25], "min_dist":[0.1, 0.25, 0.5, 0.75, 0.99], "n_components":[5, 10, 15, 20], "metric":["cosine","euclidean"], "low_memory":[False], "random_state":[42]},
     "hdbscan_params_dict": {"min_cluster_size":[5, 10, 15, 20, 25, 30, 40, 50], "min_samples":[1, 5, 10, 15, 20], "cluster_selection_epsilon":[0.3, 0.5, 0.7, 1, 1.2, 2], "metric":["euclidean","manhattan"], "prediction_data":[True]}
