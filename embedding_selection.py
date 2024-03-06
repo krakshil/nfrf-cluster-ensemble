@@ -133,8 +133,8 @@ class topicModel():
             
             for model_idx, model_name in enumerate(self.embedding_selection_dict.keys()):
 
-                train_embeddings = self.embedding_selection_dict[model_name]["train_embedding"]
-                test_embeddings = self.embedding_selection_dict[model_name]["test_embedding"]
+                train_embeddings = self.embedding_selection_dict[model_name]["train_embeddings"]
+                test_embeddings = self.embedding_selection_dict[model_name]["test_embeddings"]
 
                 for umap_idx, umap_param in enumerate(self.embedding_selection_umap_params_list):
                     
