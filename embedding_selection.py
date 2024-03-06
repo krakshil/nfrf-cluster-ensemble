@@ -145,12 +145,19 @@ class topicModel():
                     selection_evaluation_list = []
                     
                     for hdb_idx, hdbscan_param in enumerate(self.embedding_selection_hdbscan_params_list):
+                        topic_model = None
+                        try:
+                            cluster_model = HDBSCAN(**hdbscan_param)
+                            topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
+                            (test_labels, test_probs) = topic_model.transform(self.test_docs, test_features)
+                            train_s_score, train_d_score, train_c_score = self.calculate_internal_scores(features=train_features, labels=train_labels)
+                            test_s_score, test_d_score, test_c_score = self.calculate_internal_scores(features=test_features, labels=test_labels)
                         
-                        cluster_model = HDBSCAN(**hdbscan_param)
-                        topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
-                        (test_labels, test_probs) = topic_model.transform(self.test_docs, test_features)
-                        train_s_score, train_d_score, train_c_score = self.calculate_internal_scores(features=train_features, labels=train_labels)
-                        test_s_score, test_d_score, test_c_score = self.calculate_internal_scores(features=test_features, labels=test_labels)
+                        except:
+                            if topic_model is not None:
+                                print(topic_model.topic_sizes_)
+                            else:
+                                print("Error in training topic_model")
 
                         selection_evaluation_list.append([[train_s_score, train_d_score, train_c_score],[test_s_score, test_d_score, test_c_score]])
                         pbar.update(1)
