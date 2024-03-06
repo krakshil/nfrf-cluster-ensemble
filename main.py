@@ -18,11 +18,16 @@ save_dir = "data"
 
 ## Add hyper-parameter combinations for embedding selection
 embedding_selection_config = {
-    "embedding_models": {#"ST-MiniLM": ["sentence_transformer", "all-MiniLM-L6-v2"],
-                         #"ST-mnpnet": ["sentence_transformer","all-mpnet-base-v2"],
+    "embedding_models": {"ST-MiniLM-L6": ["sentence_transformer", "all-MiniLM-L6-v2"],
+                         "ST-mnpnet-base": ["sentence_transformer","all-mpnet-base-v2"],
+                         "ST-MiniLM-L12": ["sentence_transformer","all-MiniLM-L12-v2"],
+                         "ST-distil-roberta": ["sentence_transformer","all-distilroberta-v1"],
+                         "ST-mpnet-qa": ["sentence_transformer","multi-qa-mpnet-base-dot-v1"],
+                         "ST-t5-base": ["sentence_transformer","sentence-t5-base"],
+                         "ST-t5-base": ["sentence_transformer","LaBSE"],
                          "USE": ["tensorflow","https://tfhub.dev/google/universal-sentence-encoder/4"]},
-    "umap_params_dict": {"n_neighbors":[25,30], "min_dist":[0.25], "n_components":[10,20], "metric":["cosine"], "low_memory":[False], "random_state":[42]},
-    "hdbscan_params_dict": {"min_cluster_size":[30,40], "min_samples":[20,30], "cluster_selection_epsilon":[0.7], "metric":["euclidean"], "prediction_data":[True]}
+    "umap_params_dict": {"n_neighbors":[5, 10, 15, 20, 25,30], "min_dist":[0.0, 0.1, 0.25, 0.5, 0.75, 0.99], "n_components":[5, 7, 10, 12, 15, 20], "metric":["cosine","euclidean"], "low_memory":[False], "random_state":[42]},
+    "hdbscan_params_dict": {"min_cluster_size":[5, 10, 15, 20, 25, 30, 35, 40, 45, 50], "min_samples":[1, 5, 10, 15, 20, 25, 30], "cluster_selection_epsilon":[0.3, 0.5, 0.7, 1, 1.2, 1.5, 2], "metric":["euclidean","manhattan"], "prediction_data":[True]}
 }
 
 

@@ -63,7 +63,7 @@ class topicModel():
         
 
             elif self.embedding_selection_config["embedding_models"][model_name][0] == "sentence_transformer":
-                self.embedding_selection_dict[model_name]["model"] = SentenceTransformer(self.embedding_selection_config["embedding_models"][model_name][1])
+                self.embedding_selection_dict[model_name]["model"] = SentenceTransformer("sentence-transformers/" + self.embedding_selection_config["embedding_models"][model_name][1])
                 self.embedding_selection_dict[model_name]["train_embeddings"] = self.embedding_selection_dict[model_name]["model"].encode(self.train_docs)
                 self.embedding_selection_dict[model_name]["test_embeddings"] = self.embedding_selection_dict[model_name]["model"].encode(self.test_docs)
 
