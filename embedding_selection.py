@@ -128,46 +128,46 @@ class topicModel():
 
         num_total_variants = len(list(self.embedding_selection_dict.keys()))*len(self.embedding_selection_umap_params_list)*len(self.embedding_selection_hdbscan_params_list)
         model_idx, umap_idx, hdb_idx = 0, 0, 0
-        try:
-            with tqdm(total=num_total_variants, desc="Progress") as pbar:
-                
-                for model_idx, model_name in enumerate(self.embedding_selection_dict.keys()):
-
-                    train_embeddings = self.embedding_selection_dict[model_name]["train_embeddings"]
-                    test_embeddings = self.embedding_selection_dict[model_name]["test_embeddings"]
-
-                    for umap_idx, umap_param in enumerate(self.embedding_selection_umap_params_list):
-                        
-                        umap_model = UMAP(**umap_param)
-                        train_features = umap_model.fit_transform(train_embeddings)
-                        test_features = umap_model.transform(test_embeddings)
-
-                        selection_evaluation_list = []
-                        
-                        for hdb_idx, hdbscan_param in enumerate(self.embedding_selection_hdbscan_params_list):
-                            
-                            cluster_model = HDBSCAN(**hdbscan_param)
-                            topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
-                            (test_labels, test_probs) = topic_model.transform(self.test_docs, test_features)
-                            train_s_score, train_d_score, train_c_score = self.calculate_internal_scores(features=train_features, labels=train_labels)
-                            test_s_score, test_d_score, test_c_score = self.calculate_internal_scores(features=test_features, labels=test_labels)
-
-                            selection_evaluation_list.append([[train_s_score, train_d_score, train_c_score],[test_s_score, test_d_score, test_c_score]])
-                            pbar.update(1)
-                            ################ incomplete: save each results in CSV and folder start here #######################
-                            
-                        # save_path = os.path.join(self.save_directory, model_name, cluster_model_name, save_name)
-                    
-                        result_file_name = "___".join(str(key) + "_" + str(value) for (key, value) in umap_param.items()) + ".npz"
-                        with open(os.path.join(self.save_directory, "embedding_selection", model_name, "selection_results", result_file_name), "wb") as f:
-                            np.savez(f, selection_evaluation_list=selection_evaluation_list)
+        # try:
+        with tqdm(total=num_total_variants, desc="Progress") as pbar:
             
-                    print("[INFO] " + model_name + ": Completed.\n")
-        
-            print("[INFO] All iterations complete. All the data was stored.")
+            for model_idx, model_name in enumerate(self.embedding_selection_dict.keys()):
+
+                train_embeddings = self.embedding_selection_dict[model_name]["train_embeddings"]
+                test_embeddings = self.embedding_selection_dict[model_name]["test_embeddings"]
+
+                for umap_idx, umap_param in enumerate(self.embedding_selection_umap_params_list):
+                    
+                    umap_model = UMAP(**umap_param)
+                    train_features = umap_model.fit_transform(train_embeddings)
+                    test_features = umap_model.transform(test_embeddings)
+
+                    selection_evaluation_list = []
+                    
+                    for hdb_idx, hdbscan_param in enumerate(self.embedding_selection_hdbscan_params_list):
+                        
+                        cluster_model = HDBSCAN(**hdbscan_param)
+                        topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
+                        (test_labels, test_probs) = topic_model.transform(self.test_docs, test_features)
+                        train_s_score, train_d_score, train_c_score = self.calculate_internal_scores(features=train_features, labels=train_labels)
+                        test_s_score, test_d_score, test_c_score = self.calculate_internal_scores(features=test_features, labels=test_labels)
+
+                        selection_evaluation_list.append([[train_s_score, train_d_score, train_c_score],[test_s_score, test_d_score, test_c_score]])
+                        pbar.update(1)
+                        ################ incomplete: save each results in CSV and folder start here #######################
+                        
+                    # save_path = os.path.join(self.save_directory, model_name, cluster_model_name, save_name)
                 
-        except:
-            print("Model Index: " + str(model_idx) + ", UMAP Index:" + str(umap_idx) + ", HDBSCAN Index:" + str(hdb_idx))
+                    result_file_name = "___".join(str(key) + "_" + str(value) for (key, value) in umap_param.items()) + ".npz"
+                    with open(os.path.join(self.save_directory, "embedding_selection", model_name, "selection_results", result_file_name), "wb") as f:
+                        np.savez(f, selection_evaluation_list=selection_evaluation_list)
+        
+                print("[INFO] " + model_name + ": Completed.\n")
+    
+        print("[INFO] All iterations complete. All the data was stored.")
+                
+        # except:
+        #     print("Model Index: " + str(model_idx) + ", UMAP Index:" + str(umap_idx) + ", HDBSCAN Index:" + str(hdb_idx))
     
 
     ## train model
