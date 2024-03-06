@@ -67,7 +67,7 @@ class topicModel():
                 self.embedding_selection_dict[model_name]["train_embeddings"] = self.embedding_selection_dict[model_name]["model"].encode(self.train_docs)
                 self.embedding_selection_dict[model_name]["test_embeddings"] = self.embedding_selection_dict[model_name]["model"].encode(self.test_docs)
 
-        self.save_selection_embeddings(umap=False, create_save_dir=create_save_dir)
+        self.save_selection_embeddings(create_save_dir=create_save_dir)
     
 
     ## save selection embeddings
