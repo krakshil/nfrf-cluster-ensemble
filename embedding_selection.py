@@ -158,9 +158,9 @@ class topicModel():
                         
                     # save_path = os.path.join(self.save_directory, model_name, cluster_model_name, save_name)
                 
-                    result_file_name = "___".join(str(key) + "_" + str(value) for (key, value) in umap_param.items()) + ".json"
-                    with open(os.path.join(self.save_directory, "embedding_selection", model_name, "selection_results", result_file_name), "w") as f:
-                        json.dump(selection_evaluation_list, f)
+                    result_file_name = "___".join(str(key) + "_" + str(value) for (key, value) in umap_param.items()) + ".npz"
+                    with open(os.path.join(self.save_directory, "embedding_selection", model_name, "selection_results", result_file_name), "wb") as f:
+                        np.savez(f, selection_evaluation_list=selection_evaluation_list)
         
                 print("[INFO] " + model_name + ": Completed.\n")
     
