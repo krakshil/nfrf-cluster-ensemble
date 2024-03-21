@@ -88,7 +88,7 @@ class topicModel():
 
         if load_embeddings:
             for model_name in self.embedding_config.keys():
-                embeddings = np.load(os.path.join(self.save_directory, model_name, "embeddings.n pz"))
+                embeddings = np.load(os.path.join(self.save_directory, model_name, "embeddings.npz"))
                 with open(os.path.join(self.save_directory, model_name, "embedding_dict.json"), "r") as f:
                     umap_params = json.loads(f.read())["umap_params"]
 
