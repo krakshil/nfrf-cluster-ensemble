@@ -8,6 +8,7 @@ from model import topicModel, CustomSpectralClustering, CustomGaussianMixture
 # from embedding_selection import topicModel
 
 warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning)
 
 data_dir = os.path.join("data", "preprocessed")
 train_file = "questions_list_unique_train.xlsx"
