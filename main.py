@@ -15,7 +15,7 @@ train_docs = pd.read_excel(os.path.join(data_dir, train_file))["Follow - up Ques
 test_docs = pd.read_excel(os.path.join(data_dir, test_file))["Follow - up Question"].values.tolist()
 
 # save_dir = "data"
-save_dir = os.path.join("data","results")
+save_dir = os.path.join("data","results","baseline")
 
 # ## Add hyper-parameter combinations for embedding selection
 # embedding_selection_config = {
@@ -65,6 +65,6 @@ representation_config = None
 topic_model = topicModel(train_docs=train_docs, test_docs=test_docs, embedding_config=embedding_config, clustering_config=clustering_config, vectorizer_config=vectorizer_config, ctfidf_config=ctfidf_config, representation_config=representation_config, save_dir=save_dir)
 # topic_model = topicModel(train_docs=train_docs, test_docs=test_docs, embedding_selection_config=embedding_selection_config, save_dir=save_dir)
 # topic_model.run_selection()
-topic_model.run(load_embeddings=True)
+topic_model.run(load_embeddings=False)
 topic_model.get_evaluation_scores(load_embeddings=True, gt_dir="data")
 topic_model.save_best_scores()
