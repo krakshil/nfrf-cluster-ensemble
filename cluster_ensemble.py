@@ -143,8 +143,8 @@ class ClusterEnsemble:
                 cluster_variant_names = os.listdir(os.path.join(cluster_model_path, "info"))
                 
                 info_path = os.path.join(cluster_model_path, "info")
-                train_path = os.path.join(cluster_model_path, "train")
-                test_path = os.path.join(cluster_model_path, "test")
+                train_path = os.path.join(cluster_model_path, "preds", "train")
+                test_path = os.path.join(cluster_model_path, "preds", "test")
 
                 for model_variant in tqdm(cluster_variant_names, desc=(embedding_model + ", " + cluster_model)):
                     # self.save_matrix_from_model(train_features=train_features, test_features=test_features, embedding_model_name=embedding_model, cluster_model_name=cluster_model, variant_name=model_variant)
@@ -152,7 +152,7 @@ class ClusterEnsemble:
                     cluster_preds = pd.read_csv(os.path.join(train_path, model_variant))["predictions"]
                     
                     if num_max_clusters >= clusters.shape[0] >= num_min_clusters:
-                        one_hot_preds = pd.get_dummies(cluster_preds["predictions"], prefix=str(cluster_idx))
+                        one_hot_preds = pd.get_dummies(cluster_preds, prefix=str(cluster_idx))
                         membership_matrix.append(one_hot_preds)
                         cluster_index_dict[cluster_idx] = [embedding_model, cluster_model, model_variant]
                         cluster_idx += 1
