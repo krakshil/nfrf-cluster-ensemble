@@ -159,7 +159,7 @@ class ClusterEnsemble:
                         cluster_index_dict[cluster_idx] = [embedding_model, cluster_model, model_variant]
                         cluster_idx += 1
         
-        with open(os.path.join(self.complete_path, " meta_info.json"), "w") as f:
+        with open(os.path.join(self.complete_path, "meta_info.json"), "w") as f:
             json.dump(cluster_index_dict, f)
 
         membership_matrix = pd.concat(membership_matrix, axis=1)
