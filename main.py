@@ -73,5 +73,5 @@ representation_config = None
 # topic_model.get_evaluation_scores(load_embeddings=True, gt_dir="data")
 # topic_model.save_best_scores()
 
-ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir, save_dir=os.path.join("data_v1","results"))
+ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir, save_dir=os.path.join("data","results"))
 ensemble_model.combine_partial_membership_matrix()
