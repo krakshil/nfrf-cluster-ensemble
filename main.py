@@ -19,7 +19,7 @@ train_docs = pd.read_excel(os.path.join(data_dir, train_file))["Follow - up Ques
 test_docs = pd.read_excel(os.path.join(data_dir, test_file))["Follow - up Question"].values.tolist()
 
 # save_dir = "data"
-save_dir = os.path.join("data","results","baseline")
+save_dir = os.path.join("data_v1","results","baseline")
 
 # ## Add hyper-parameter combinations for embedding selection
 # embedding_selection_config = {
@@ -73,5 +73,5 @@ representation_config = None
 # topic_model.get_evaluation_scores(load_embeddings=True, gt_dir="data")
 # topic_model.save_best_scores()
 
-ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir, save_dir=os.path.join("data","results"))
-ensemble_model.get_partial_membership()
+ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir, save_dir=os.path.join("data_v1","results"))
+ensemble_model.combine_partial_membership_matrix()
