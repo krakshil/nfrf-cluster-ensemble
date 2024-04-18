@@ -120,7 +120,9 @@ class ClusterEnsemble:
     def create_save_dir(self):
         self.save_path = os.path.join(self.save_dir, "cluster_ensemble")
         self.partial_path = os.path.join(self.save_path, "partial_membership_matrix")
+        self.complete_path = os.path.join(self.save_path, "complete_membership_matrix")
         os.makedirs(self.partial_path, exist_ok=True)
+        os.makedirs(self.complete_path, exist_ok=True)
 
 
     ## Combine all the partial matrix of memberships
