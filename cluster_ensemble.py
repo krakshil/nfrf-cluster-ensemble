@@ -89,23 +89,23 @@ class ClusterEnsemble:
         try:
             topic_model = BERTopic.load(os.path.join(self.members_dir, embedding_model_name, cluster_model_name, variant_name))
             topic_info = topic_model.get_topic_info()
+            doc_info = topic_model.get_document_info(self.train_docs)
 
             if topic_model.get_topic_info().shape[0] > 2:
-                train_preds, train_probs = topic_model.transform(self.train_docs, train_features)
+                # train_preds, train_probs = topic_model.transform(self.train_docs, train_features)
+                train_preds, train_probs = doc_info["Topic"].tolist(), None
                 test_preds, test_probs = topic_model.transform(self.test_docs, test_features)
 
-                if train_probs is not None:
-                    columns = ["predictions"] + list(range(0,train_probs.shape[1]))
-                    train_vals = np.concatenate([np.array(train_preds)[:,None], train_probs], axis=1)
+                if test_probs is not None:
+                    columns = ["predictions"] + list(range(0,test_probs.shape[1]))
                     test_vals = np.concatenate([np.array(test_preds)[:,None], test_probs], axis=1)
-                    train_df = pd.DataFrame(train_vals, columns=columns)
+                    train_df = pd.DataFrame(train_preds, columns=columns[0:1])
                     test_df = pd.DataFrame(test_vals, columns=columns)
 
                 else:
                     columns = ["predictions"]
-                    train_vals = np.array(train_preds)
                     test_vals = np.array(test_preds)
-                    train_df = pd.DataFrame(train_vals, columns=columns)
+                    train_df = pd.DataFrame(train_preds, columns=columns)
                     test_df = pd.DataFrame(test_vals, columns=columns)
                     
                 topic_info.to_csv(os.path.join(info_path, variant_name + ".csv"), index=False)
