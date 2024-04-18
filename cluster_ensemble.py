@@ -131,13 +131,18 @@ class ClusterEnsemble:
         print("[INFO] Loading Partial Membership Matrix for all members...")
         embedding_names = os.listdir(self.partial_path)
         
-        membership_matrix = []
-        cluster_index_dict = {}
-        cluster_idx = 0
 
         for embedding_model in embedding_names:
             
             print("[INFO] Model: " + embedding_model + "...")
+            
+            membership_matrix = []
+            cluster_index_dict = {}
+            cluster_idx = 0
+            
+            model_path = os.path.join(self.complete_path, embedding_model)
+            os.makedirs(model_path, exist_ok=True)
+
             clustering_names = os.listdir(os.path.join(self.partial_path, embedding_model))
             
             for cluster_model in clustering_names:
@@ -159,10 +164,10 @@ class ClusterEnsemble:
                         cluster_index_dict[cluster_idx] = [embedding_model, cluster_model, model_variant]
                         cluster_idx += 1
         
-        with open(os.path.join(self.complete_path, "meta_info.json"), "w") as f:
-            json.dump(cluster_index_dict, f)
+            with open(os.path.join(model_path, "meta_info.json"), "w") as f:
+                json.dump(cluster_index_dict, f)
 
-        membership_matrix = pd.concat(membership_matrix, axis=1)
-        membership_matrix.to_csv(os.path.join(self.complete_path, "matrix.csv"), index=False)
+            membership_matrix = pd.concat(membership_matrix, axis=1)
+            membership_matrix.to_csv(os.path.join(model_path, "matrix.csv"), index=False)
         
         print("[INFO] Complete Membership matrix saved.")
