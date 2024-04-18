@@ -113,7 +113,7 @@ class ClusterEnsemble:
                     train_df.to_csv(os.path.join(preds_path, "train", variant_name + ".csv"), index=False)
                     test_df.to_csv(os.path.join(preds_path, "test", variant_name + ".csv"), index=False)
         except Exception as e:
-            print("The error is: ",e)
+            print("[INFO] (" + embedding_model_name + ", " + cluster_model_name + ", {" + variant_name + "})\tThe error is: ",e)
 
 
     def create_save_dir(self):
