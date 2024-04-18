@@ -56,6 +56,7 @@ class ClusterEnsemble:
         embedding_names = list(filter(lambda x: True if ("." not in x) else False, os.listdir(self.members_dir)))
         
         for embedding_model in embedding_names:
+            print("[INFO] Model: " + embedding_model + "...")
             with np.load(os.path.join(self.members_dir, embedding_model, "embeddings.npz")) as f:
                 train_features = f["train_features"]
                 test_features = f["test_features"]
@@ -75,7 +76,12 @@ class ClusterEnsemble:
     
     def save_matrix_from_model(self, train_features, test_features, embedding_model_name, cluster_model_name, variant_name):
         save_path = os.path.join(self.partial_path, embedding_model_name, cluster_model_name)
-        os.makedirs(save_path, exist_ok=True)
+        info_path = os.path.join(save_path, "info")
+        preds_path = os.path.join(save_path, "preds")
+        os.makedirs(info_path, exist_ok=True)
+        os.makedirs(os.path.join(preds_path, "train"), exist_ok=True)
+        os.makedirs(os.path.join(preds_path, "test"), exist_ok=True)
+
 
         topic_model = BERTopic.load(os.path.join(self.members_dir, embedding_model_name, cluster_model_name, variant_name))
         topic_info = topic_model.get_topic_info()
@@ -83,17 +89,29 @@ class ClusterEnsemble:
         if topic_model.get_topic_info().shape[0] > 2:
             train_preds, train_probs = topic_model.transform(self.train_docs, train_features)
             test_preds, test_probs = topic_model.transform(self.test_docs, test_features)
-        
-        columns = ["predictions"] + list(range(0,train_probs.shape[1]))
-        train_vals = np.concatenate([np.array(train_preds)[:,None], train_probs], axis=1)
-        test_vals = np.concatenate([np.array(test_preds)[:,None], test_probs], axis=1)
 
-        topic_info.to_csv(os.path.join(save_path, variant_name + " INFO.csv"), index=False)
-        train_df = pd.DataFrame(train_vals, columns=columns)
-        test_df = pd.DataFrame(test_vals, columns=columns)
-        
-        train_df.to_csv(os.path.join(save_path, variant_name + " TRAIN_PREDS.csv"))
-        test_df.to_csv(os.path.join(save_path, variant_name + " TEST_PREDS.csv"))
+            if train_probs is not None:
+                columns = ["predictions"] + list(range(0,train_probs.shape[1]))
+                train_vals = np.concatenate([np.array(train_preds)[:,None], train_probs], axis=1)
+                test_vals = np.concatenate([np.array(test_preds)[:,None], test_probs], axis=1)
+
+                topic_info.to_csv(os.path.join(save_path, variant_name + " INFO.csv"), index=False)
+                train_df = pd.DataFrame(train_vals, columns=columns)
+                test_df = pd.DataFrame(test_vals, columns=columns)
+                
+                train_df.to_csv(os.path.join(save_path, variant_name + " TRAIN_PREDS.csv"))
+                test_df.to_csv(os.path.join(save_path, variant_name + " TEST_PREDS.csv"))
+            else:
+                columns = ["predictions"]
+                train_vals = np.array(train_preds)
+                test_vals = np.array(test_preds)
+
+                topic_info.to_csv(os.path.join(info_path, variant_name + ".csv"), index=False)
+                train_df = pd.DataFrame(train_vals, columns=columns)
+                test_df = pd.DataFrame(test_vals, columns=columns)
+                
+                train_df.to_csv(os.path.join(preds_path, "train", variant_name + ".csv"), index=False)
+                test_df.to_csv(os.path.join(preds_path, "test", variant_name + ".csv"), index=False)
 
 
     def create_save_dir(self):
