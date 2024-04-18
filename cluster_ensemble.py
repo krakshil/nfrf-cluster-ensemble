@@ -38,6 +38,8 @@ class ClusterEnsemble:
         self.train_docs = train_docs
         self.test_docs = test_docs
 
+        self.membership_matrix = None
+
         # self.embedding_config = embedding_config
         # self.embedding_dict = {key: {} for key in embedding_config.keys()}
         
@@ -48,6 +50,7 @@ class ClusterEnsemble:
         # self.evaluation_dict = {}
 
         # self.save_dir = save_dir
+    
     
     # calculate partial-membership matrices
     def get_partial_membership(self):
@@ -74,6 +77,7 @@ class ClusterEnsemble:
         print("[INFO] All partial membership matrix saved.")
 
     
+    ## Load model, get predictions and save to csv
     def save_matrix_from_model(self, train_features, test_features, embedding_model_name, cluster_model_name, variant_name):
         save_path = os.path.join(self.partial_path, embedding_model_name, cluster_model_name)
         info_path = os.path.join(save_path, "info")
@@ -112,11 +116,51 @@ class ClusterEnsemble:
             print("[INFO] (" + embedding_model_name + ", " + cluster_model_name + ", {" + variant_name + "})\tThe error is: ",e)
 
 
+    ## Create save directory heirarchy
     def create_save_dir(self):
         self.save_path = os.path.join(self.save_dir, "cluster_ensemble")
         self.partial_path = os.path.join(self.save_path, "partial_membership_matrix")
         os.makedirs(self.partial_path, exist_ok=True)
 
 
-    def combine_partial_membership_matrix():
-        pass
+    ## Combine all the partial matrix of memberships
+    def combine_partial_membership_matrix(self, num_min_clusters=5, num_max_clusters=25):
+        
+        print("[INFO] Loading Partial Membership Matrix for all members...")
+        embedding_names = os.listdir(self.partial_path)
+        
+        membership_matrix = []
+        cluster_index_dict = {}
+        cluster_idx = 0
+
+        for embedding_model in embedding_names:
+            
+            print("[INFO] Model: " + embedding_model + "...")
+            clustering_names = os.listdir(os.path.join(self.partial_path, embedding_model))
+            
+            for cluster_model in clustering_names:
+                cluster_model_path = os.path.join(self.partial_path, embedding_model, cluster_model)
+                cluster_variant_names = os.listdir(os.path.join(cluster_model_path, "info"))
+                
+                info_path = os.path.join(cluster_model_path, "info")
+                train_path = os.path.join(cluster_model_path, "train")
+                test_path = os.path.join(cluster_model_path, "test")
+
+                for model_variant in tqdm(cluster_variant_names, desc=(embedding_model + ", " + cluster_model)):
+                    # self.save_matrix_from_model(train_features=train_features, test_features=test_features, embedding_model_name=embedding_model, cluster_model_name=cluster_model, variant_name=model_variant)
+                    clusters = pd.read_csv(os.path.join(info_path, model_variant))["Topic"].values
+                    cluster_preds = pd.read_csv(os.path.join(train_path, model_variant))["predictions"]
+                    
+                    if num_max_clusters >= clusters.shape[0] >= num_min_clusters:
+                        one_hot_preds = pd.get_dummies(cluster_preds["predictions"], prefix=str(cluster_idx))
+                        membership_matrix.append(one_hot_preds)
+                        cluster_index_dict[cluster_idx] = [embedding_model, cluster_model, model_variant]
+                        cluster_idx += 1
+        
+        with open(os.path.join(self.complete_path, " meta_info.json"), "w") as f:
+            json.dump(cluster_index_dict, f)
+
+        membership_matrix = pd.concat(membership_matrix, axis=1)
+        membership_matrix.to_csv(os.path.join(self.complete_path, "matrix.csv"), index=False)
+        
+        print("[INFO] Complete Membership matrix saved.")
