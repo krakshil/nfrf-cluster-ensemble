@@ -277,6 +277,7 @@ class ClusterEnsemble:
             return updated_dict
         
         def save_ensemble_results(path, matrix, merge_dict):
+            os.makedirs(path, exist_ok=True)
             matrix.to_csv(os.path.join(path, "ensemble_soft_clusters.csv"), index=False)
             with open(os.path.join(path, "ensemble_merge_info.json"), "w") as f:
                 json.dump(merge_dict, f)
@@ -285,6 +286,7 @@ class ClusterEnsemble:
         for embedding_model in self.membership_matrices.keys():
             print("[INFO] Embedding Model: " + str(embedding_model) + "...")
             matrix = self.membership_matrices[embedding_model].copy()
+            matrix = matrix[matrix.columns[:1000]]
             columns = matrix.columns
 
             c_s = get_cluster_similarity(matrix, iter=1)
