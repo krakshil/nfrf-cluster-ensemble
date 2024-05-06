@@ -76,11 +76,11 @@ representation_config = None
 ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir, save_dir=os.path.join("data","results"))
 # ensemble_model.get_partial_membership()
 ensemble_model.combine_partial_membership_matrix(load=True)
-# print("\n\n")
-# total_clusters = 0
-# for key, matrix in ensemble_model.membership_matrices.items():
-#     total_clusters += matrix.shape[1]
-#     print(key + ": ", matrix.shape)
+print("\n\n")
+total_clusters = 0
+for key, matrix in ensemble_model.membership_matrices.items():
+    total_clusters += matrix.shape[1]
+    print(key + ": ", matrix.shape)
 
-# print("\nTotal Clusters: " + str(total_clusters) + "\n\n")
+print("\nTotal Clusters: " + str(total_clusters) + "\n\n")
 ensemble_model.consensus_fn()
