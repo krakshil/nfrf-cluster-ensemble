@@ -232,7 +232,7 @@ class ClusterEnsemble:
                             pbar.update(1)
             return c_s
 
-        def get_merge_dict(c_s, columns, alpha_01):
+        def get_merge_dict(c_s, columns, alpha_01, iter=1):
             cluster_merge = {}
             clusters_visited = set()
             flag = False
@@ -290,7 +290,7 @@ class ClusterEnsemble:
             columns = matrix.columns
 
             c_s = get_cluster_similarity(matrix, iter=1)
-            merge_dict = get_merge_dict(c_s, columns, self.alpha_1)
+            merge_dict = get_merge_dict(c_s, columns, self.alpha_1, iter=1)
             matrix_interim = merge_clusters(merge_dict, matrix)
             current_k = matrix_interim.shape[1]
 
@@ -303,14 +303,14 @@ class ClusterEnsemble:
                         flag = True
                     
                     c_s = get_cluster_similarity(matrix_interim, iter=iter)
-                    merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01)
+                    merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
                     
                     if len(merge_dict_interim) >= current_k:
                         if (alpha_01) <= self.min_alpha_1:
                             alpha_flag = True
                         else:
                             alpha_01 = alpha_01 - self.alpha_diff_1
-                            merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01)
+                            merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
 
                     if not alpha_flag:    
                         merge_dict = update_merge_dict(merge_dict_interim, merge_dict)
