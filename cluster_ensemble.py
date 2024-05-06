@@ -283,7 +283,7 @@ class ClusterEnsemble:
                 json.dump(merge_dict, f)
         
 
-        for embedding_model in self.membership_matrices.keys()[1:]:
+        for embedding_model in list(self.membership_matrices.keys())[1:]:
             print("[INFO] Embedding Model: " + str(embedding_model) + "...")
             matrix = self.membership_matrices[embedding_model].copy()
             columns = matrix.columns
