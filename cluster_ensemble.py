@@ -300,7 +300,7 @@ class ClusterEnsemble:
                     flag = False
                 else:
                     if alpha_flag:
-                        flag = True
+                        flag = False
                     
                     c_s = get_cluster_similarity(matrix_interim, iter=iter)
                     merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
