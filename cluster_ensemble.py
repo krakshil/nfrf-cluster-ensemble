@@ -289,6 +289,7 @@ class ClusterEnsemble:
             matrix = matrix[matrix.columns[:1000]]
             columns = matrix.columns
             alpha_01 = self.alpha_1
+            print(alpha_01)
 
             c_s = get_cluster_similarity(matrix, iter=1)
             merge_dict = get_merge_dict(c_s, columns, alpha_01, iter=1)
@@ -322,4 +323,5 @@ class ClusterEnsemble:
             print(matrix_interim.sum(axis=0).describe())
             save_path = os.path.join(self.final_path, embedding_model)
             save_ensemble_results(path=save_path, matrix=matrix_interim, merge_dict=merge_dict)
+            print(alpha_01)
             print("[INFO] Saved soft ensemble clusters and merge dict.")
