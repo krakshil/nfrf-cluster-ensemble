@@ -261,19 +261,19 @@ class ClusterEnsemble:
                     new_cluster_idx += 1
             return cluster_merge
 
-        def merge_clusters(merge_dict, matrix):
+        def merge_clusters(merge_dict, matrix, iter=1):
             new_matrix = {}
-            for combination_name, cluster_combination in merge_dict.items():        
+            for combination_name, cluster_combination in merge_dict[iter].items():        
                 new_matrix[combination_name] = (matrix[cluster_combination].sum(axis=1).apply(lambda x: 0 if x<1 else 1))
             new_matrix = pd.DataFrame(new_matrix)
             return new_matrix
 
-        def update_merge_dict(current, last):
+        def update_merge_dict(iter_dict, merge_dict, iter):
             updated_dict = {}
-            for key, value in current.items():
+            for key, value in iter_dict.items():
                 updated_dict[key] = []
                 for val in value:
-                    updated_dict[key] += last[val]
+                    updated_dict[key] += merge_dict[iter-1][val]
             return updated_dict
         
         def save_ensemble_results(path, matrix, merge_dict):
@@ -286,11 +286,12 @@ class ClusterEnsemble:
         for embedding_model in list(self.membership_matrices.keys())[1:]:
             print("[INFO] Embedding Model: " + str(embedding_model) + "...")
             matrix = self.membership_matrices[embedding_model].copy()
+            merge_dict = {}
             columns = matrix.columns
             alpha_01 = self.alpha_1
 
             c_s = get_cluster_similarity(matrix, iter=1)
-            merge_dict = get_merge_dict(c_s, columns, alpha_01, iter=1)
+            merge_dict[1] = get_merge_dict(c_s, columns, alpha_01, iter=1)
             matrix_interim = merge_clusters(merge_dict, matrix)
             current_k = matrix_interim.shape[1]
 
@@ -313,7 +314,7 @@ class ClusterEnsemble:
                             merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
 
                     if not alpha_flag:    
-                        merge_dict = update_merge_dict(merge_dict_interim, merge_dict)
+                        merge_dict[iter] = update_merge_dict(merge_dict_interim, merge_dict, iter)
                         matrix_interim = merge_clusters(merge_dict, matrix)
                         current_k = matrix_interim.shape[1]
                         iter += 1
