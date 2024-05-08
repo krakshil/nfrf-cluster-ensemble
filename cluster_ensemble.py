@@ -287,9 +287,9 @@ class ClusterEnsemble:
             print("[INFO] Embedding Model: " + str(embedding_model) + "...")
             matrix = self.membership_matrices[embedding_model].copy()
             matrix = matrix[matrix.columns[:1000]]
-            merge_dict = {}
             columns = matrix.columns
             alpha_01 = self.alpha_1
+            merge_dict = {}
 
             c_s = get_cluster_similarity(matrix, iter=1)
             merge_dict[1] = get_merge_dict(c_s, columns, alpha_01, iter=1)
@@ -316,7 +316,7 @@ class ClusterEnsemble:
 
                     if not alpha_flag:    
                         merge_dict[iter] = update_merge_dict(merge_dict_interim, merge_dict, iter)
-                        matrix_interim = merge_clusters(merge_dict, matrix)
+                        matrix_interim = merge_clusters(merge_dict, matrix, iter)
                         current_k = matrix_interim.shape[1]
                         iter += 1
 
