@@ -286,6 +286,7 @@ class ClusterEnsemble:
         for embedding_model in list(self.membership_matrices.keys())[1:]:
             print("[INFO] Embedding Model: " + str(embedding_model) + "...")
             matrix = self.membership_matrices[embedding_model].copy()
+            matrix = matrix[matrix.columns[:1000]]
             merge_dict = {}
             columns = matrix.columns
             alpha_01 = self.alpha_1
