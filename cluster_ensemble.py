@@ -283,10 +283,9 @@ class ClusterEnsemble:
                 json.dump(merge_dict, f)
         
 
-        for embedding_model in list(self.membership_matrices.keys())[1:]:
+        for embedding_model in list(self.membership_matrices.keys()):
             print("[INFO] Embedding Model: " + str(embedding_model) + "...")
             matrix = self.membership_matrices[embedding_model].copy()
-            matrix = matrix[matrix.columns[:1000]]
             columns = matrix.columns
             alpha_01 = self.alpha_1
             merge_dict = {}
