@@ -314,7 +314,8 @@ class ClusterEnsemble:
                             alpha_01 = alpha_01 - self.alpha_diff_1
                             merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
 
-                    if not alpha_flag:    
+                    if not alpha_flag:
+                        print(iter, merge_dict[iter].keys(), "\n\n", merge_dict[iter-1].keys())    
                         merge_dict[iter] = update_merge_dict(merge_dict_interim, merge_dict, iter)
                         matrix_interim = merge_clusters(merge_dict, matrix, iter)
                         current_k = matrix_interim.shape[1]
