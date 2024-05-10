@@ -276,11 +276,13 @@ class ClusterEnsemble:
                     updated_dict[key] += merge_dict[iter-1][val]
             return updated_dict
         
-        def save_ensemble_results(path, matrix, merge_dict):
+        def save_ensemble_results(path, matrix, merge_dict, alphas):
             os.makedirs(path, exist_ok=True)
             matrix.to_csv(os.path.join(path, "ensemble_soft_clusters.csv"), index=False)
             with open(os.path.join(path, "ensemble_merge_info.json"), "w") as f:
                 json.dump(merge_dict, f)
+            with open(os.path.join(path, "ensemble_merge_alpha_1.json"), "w") as f:
+                json.dump(alphas, f)
         
 
         for embedding_model in list(self.membership_matrices.keys()):
@@ -288,10 +290,12 @@ class ClusterEnsemble:
             matrix = self.membership_matrices[embedding_model].copy()
             columns = matrix.columns
             alpha_01 = self.alpha_1
+            alphas = []
             merge_dict = {}
 
             c_s = get_cluster_similarity(matrix, iter=1)
             merge_dict[1] = get_merge_dict(c_s, columns, alpha_01, iter=1)
+            alphas.append(alpha_01)
             matrix_interim = merge_clusters(merge_dict, matrix)
             current_k = matrix_interim.shape[1]
 
@@ -305,6 +309,7 @@ class ClusterEnsemble:
                     
                     c_s = get_cluster_similarity(matrix_interim, iter=iter)
                     merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
+                    alphas.append(alpha_01)
                     
                     if len(merge_dict_interim) >= current_k:
                         if (alpha_01) <= self.min_alpha_1:
@@ -312,6 +317,7 @@ class ClusterEnsemble:
                         else:
                             alpha_01 = alpha_01 - self.alpha_diff_1
                             merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
+                            alphas[-1] = alpha_01
 
                     if not alpha_flag:    
                         merge_dict[iter] = update_merge_dict(merge_dict_interim, merge_dict, iter)
@@ -320,5 +326,5 @@ class ClusterEnsemble:
                         iter += 1
 
             save_path = os.path.join(self.final_path, embedding_model)
-            save_ensemble_results(path=save_path, matrix=matrix_interim, merge_dict=merge_dict)
+            save_ensemble_results(path=save_path, matrix=matrix_interim, merge_dict=merge_dict, alphas=alphas)
             print("[INFO] Saved soft ensemble clusters and merge dict.")
