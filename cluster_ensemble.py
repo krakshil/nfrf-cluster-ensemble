@@ -23,7 +23,7 @@ from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_har
 
 ## Cluster ensemble
 class ClusterEnsemble:
-    def __init__(self, train_docs:list, test_docs:list, alpha_1=0.6, min_alpha_1=0.1, alpha_diff_1=0.05, alpha_2=0.5, final_k=12, members_dir="", save_dir=""):
+    def __init__(self, train_docs:list, test_docs:list, alpha_1=0.8, min_alpha_1=0.5, alpha_diff_1=0.025, alpha_2=0.7, final_k=12, members_dir="", save_dir=""):
         '''
         membership dict: dict (contains metadata of the types of clustering models with constructors and hyper-parameters)
             {"hdbscan": {"constructor": model_constructor - callable, "type":"model_type", "params_dict":{"min_cluster_size":[15,20,25], "min_samples":[5,10,15], "cluster_selection_epsilon":[0.4, 0.5, 0.7]}}}
