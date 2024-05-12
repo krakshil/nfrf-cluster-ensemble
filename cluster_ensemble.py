@@ -23,7 +23,7 @@ from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_har
 
 ## Cluster ensemble
 class ClusterEnsemble:
-    def __init__(self, train_docs:list, test_docs:list, alpha_1=0.8, min_alpha_1=0.5, alpha_diff_1=0.025, alpha_2=0.7, final_k=12, members_dir="", save_dir=""):
+    def __init__(self, train_docs:list, test_docs:list, alpha_1=0.8, min_alpha_1=0.5, alpha_diff_1=0.025, alpha_2=0.7, final_k=12, min_samples=5, members_dir="", save_dir=""):
         '''
         membership dict: dict (contains metadata of the types of clustering models with constructors and hyper-parameters)
             {"hdbscan": {"constructor": model_constructor - callable, "type":"model_type", "params_dict":{"min_cluster_size":[15,20,25], "min_samples":[5,10,15], "cluster_selection_epsilon":[0.4, 0.5, 0.7]}}}
@@ -42,6 +42,7 @@ class ClusterEnsemble:
         self.alpha_diff_1 = alpha_diff_1
         self.alpha_2 = alpha_2
         self.final_k = final_k
+        self.min_samples = min_samples
         # self.embedding_config = embedding_config
         # self.embedding_dict = {key: {} for key in embedding_config.keys()}
         
@@ -188,7 +189,7 @@ class ClusterEnsemble:
 
 
     ## Consensus function
-    def consensus_fn(self):
+    def consensus_fn(self, load=False):
         
         def cluster_similarity(c1, c2):
             n = c1.shape[0]
@@ -197,17 +198,6 @@ class ClusterEnsemble:
             intersection = (c1*c2).sum()
             c1c2 = c1_sum*c2_sum
             return (intersection - (c1c2/n))/(np.sqrt(c1c2*(n-c1_sum)*(n-c2_sum))/n)
-        
-        def member_similarity(matrix, clusters_dict):
-            membership_df = []
-            columns = []
-            for combination_name, cluster_combination in clusters_dict.items():
-                columns.append(combination_name)
-                membership_df.append(matrix[cluster_combination].sum(axis=1))
-            
-            membership_df = pd.DataFrame(membership_df, columns=columns)
-            membership_df = membership_df/membership_df.max(axis=1)
-            return membership_df
         
         def get_cluster_similarity(matrix, iter=1):
             # columns = matrix.columns
@@ -285,47 +275,139 @@ class ClusterEnsemble:
             with open(os.path.join(path, "ensemble_merge_alpha_1.json"), "w") as f:
                 json.dump(alphas, f)
         
+        def save_final_results(path, matrix):
+            os.makedirs(path, exist_ok=True)
+            matrix.to_csv(os.path.join(path, "ensemble_hard_clusters.csv"), index=True, index_label="index")
+        
+        def load_ensemble_results(path):
+            matrix = pd.read_csv(os.path.join(path, "ensemble_soft_clusters.csv"))
+            with open(os.path.join(path, "ensemble_merge_info.json"), "r") as f:
+                merge_dict = json.load(f)
+            with open(os.path.join(path, "ensemble_merge_alpha_1.json"), "r") as f:
+                alphas = json.load(f)
+            return matrix, merge_dict, alphas
 
-        for embedding_model in list(self.membership_matrices.keys()):
-            print("[INFO] Embedding Model: " + str(embedding_model) + "...")
-            matrix = self.membership_matrices[embedding_model].copy()
-            columns = matrix.columns
-            alpha_01 = self.alpha_1
-            alphas = []
-            merge_dict = {}
+        def member_similarity(matrix, clusters_dict):
+            membership_df = []
+            columns = []
+            for combination_name, cluster_combination in clusters_dict.items():
+                columns.append(combination_name)
+                membership_df.append(matrix[cluster_combination].sum(axis=1))
+            
+            membership_df = pd.DataFrame(membership_df, columns=columns)
+            membership_df = membership_df/membership_df.max(axis=1)
+            return membership_df
 
-            c_s = get_cluster_similarity(matrix, iter=1)
-            merge_dict[1] = get_merge_dict(c_s, columns, alpha_01, iter=1)
-            alphas.append(alpha_01)
-            matrix_interim = merge_clusters(merge_dict, matrix)
-            current_k = matrix_interim.shape[1]
+        def get_membership_df(merge_dicts, matrices, iters=None):
+            if iters is None:
+                iters = [list(merge_dicts[key].keys())[-1] for key in list(merge_dicts.keys())]
+            new_matrices = {}
+            for key in list(merge_dicts.keys()):
+                new_matrices.append(dict())
+                for combination_name, cluster_combination in merge_dicts[key][str(iters[key])].items():        
+                    new_matrices[key][combination_name] = matrices[key][cluster_combination].sum(axis=1)
+                new_matrices[key] = pd.DataFrame(new_matrices[key])
+            return new_matrices
 
-            flag, alpha_flag, iter = True, False, 2
-            while flag:
-                if (current_k <= self.final_k):
-                    flag = False
-                else:
-                    if alpha_flag:
+        def get_cluster_quality(matrix):
+            certainty = matrix.sum(axis=0) / (matrix > 0).sum(axis=0)
+            mask = (matrix > 0).astype("int")
+            return (((matrix - (mask * certainty))**2).sum(axis=0)) / mask.sum(axis=0)
+
+        def add_uncertain_member(certain_mat, uncertain_mat, mat, clusters, idx):
+            clusters_oi = mat.columns[mat.loc[uncertain_mat.iloc[idx].name] > 0].tolist()
+            quality_diff = (get_cluster_quality(certain_mat.append(mat.loc[uncertain_mat.iloc[idx].name], ignore_index=False)[clusters_oi]) - get_cluster_quality(certain_mat[clusters_oi]))
+            new_row = {cluster:0 for cluster in clusters}
+            new_row[quality_diff.index[quality_diff.argmin()]] = (mat.loc[uncertain_mat.iloc[idx].name])[quality_diff.index[quality_diff.argmin()]]
+            certain_mat.loc[uncertain_mat.iloc[idx].name] = new_row
+        
+        if not load:
+            for embedding_model in list(self.membership_matrices.keys()):
+                print("[INFO] Embedding Model: " + str(embedding_model) + "...")
+                matrix = self.membership_matrices[embedding_model].copy()
+                columns = matrix.columns
+                alpha_01 = self.alpha_1
+                alphas = []
+                merge_dict = {}
+
+                c_s = get_cluster_similarity(matrix, iter=1)
+                merge_dict[1] = get_merge_dict(c_s, columns, alpha_01, iter=1)
+                alphas.append(alpha_01)
+                matrix_interim = merge_clusters(merge_dict, matrix)
+                current_k = matrix_interim.shape[1]
+
+                flag, alpha_flag, iter = True, False, 2
+                while flag:
+                    if (current_k <= self.final_k):
                         flag = False
-                    
-                    c_s = get_cluster_similarity(matrix_interim, iter=iter)
-                    merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
-                    alphas.append(alpha_01)
-                    
-                    if len(merge_dict_interim) >= current_k:
-                        if (alpha_01) <= self.min_alpha_1:
-                            alpha_flag = True
-                        else:
-                            alpha_01 = alpha_01 - self.alpha_diff_1
-                            merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
-                            alphas[-1] = alpha_01
+                    else:
+                        if alpha_flag:
+                            flag = False
+                        
+                        c_s = get_cluster_similarity(matrix_interim, iter=iter)
+                        merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
+                        alphas.append(alpha_01)
+                        
+                        if len(merge_dict_interim) >= current_k:
+                            if (alpha_01) <= self.min_alpha_1:
+                                alpha_flag = True
+                            else:
+                                alpha_01 = alpha_01 - self.alpha_diff_1
+                                merge_dict_interim = get_merge_dict(c_s, matrix_interim.columns, alpha_01, iter=iter)
+                                alphas[-1] = alpha_01
 
-                    if not alpha_flag:    
-                        merge_dict[iter] = update_merge_dict(merge_dict_interim, merge_dict, iter)
-                        matrix_interim = merge_clusters(merge_dict, matrix, iter)
-                        current_k = matrix_interim.shape[1]
-                        iter += 1
+                        if not alpha_flag:    
+                            merge_dict[iter] = update_merge_dict(merge_dict_interim, merge_dict, iter)
+                            matrix_interim = merge_clusters(merge_dict, matrix, iter)
+                            current_k = matrix_interim.shape[1]
+                            iter += 1
 
-            save_path = os.path.join(self.final_path, embedding_model)
-            save_ensemble_results(path=save_path, matrix=matrix_interim, merge_dict=merge_dict, alphas=alphas)
-            print("[INFO] Saved soft ensemble clusters and merge dict.")
+                save_path = os.path.join(self.final_path, embedding_model)
+                save_ensemble_results(path=save_path, matrix=matrix_interim, merge_dict=merge_dict, alphas=alphas)
+                print("[INFO] Saved soft ensemble clusters and merge dict.")
+
+        print("[INFO] Loading pre-computed merge info and final clusters")    
+        merge_infos = dict()
+        final_clusters = dict()
+        alphas_dict = dict()
+        for embedding_model in list(self.membership_matrices.keys()):
+            load_path = os.path.join(self.final_path, embedding_model)
+            matrix, merge_dict, alphas = load_ensemble_results(load_path)
+            merge_infos[embedding_model] = merge_dict
+            final_clusters[embedding_model] = matrix
+            alphas_dict[embedding_model] = alphas
+
+        print("[INFO] Enforcing hard clustering...")
+        last_iters = [list(merge_infos[key].keys())[-1] for key in list(merge_infos.keys())]
+
+        membership_dfs = get_membership_df(merge_infos, self.membership_matrices, last_iters)
+        membership_mats = {key:(membership_dfs[key].div(membership_dfs[key].sum(axis=1), axis=0)) for key in list(membership_dfs.keys())}
+        
+        cluster_certainties = {key:(membership_mats[key].sum(axis=0) / (membership_mats[key] > 0).sum(axis=0)) for key in list(membership_mats.keys())}
+        theta1_clusters = {key:(cluster_certainties[key].sort_values(ascending=False)[:self.final_k].index.tolist()) for key in list(cluster_certainties.keys())}
+
+        theta1 = {i:(membership_dfs[i][theta1_clusters[i]]) for i in list(theta1_clusters.keys())}
+        theta1_mats = {i:(theta1[i].div(theta1[i].sum(axis=1), axis=0).round(3)) for i in list(theta1.keys())}
+
+        theta1_clusters = {i:(list(filter(lambda x: ((theta1_mats[i][x] >= self.alpha_2).sum() > 5), theta1_clusters[i]))) for i in list(theta1_clusters.keys())}
+        theta2_clusters = {i:(list(filter(lambda x: True if (x not in theta1_clusters[i]) else False, membership_mats[i].columns.tolist()))) for i in list(theta1_clusters.keys())}
+
+        theta1 = {i:(membership_dfs[i][theta1_clusters[i]]) for i in list(theta1_clusters.keys())}
+        theta1_mats = {i:(theta1[i].div(theta1[i].sum(axis=1), axis=0).round(3)) for i in list(theta1.keys())}
+
+        theta1_max_masks = {i:(np.zeros(theta1_mats[i].shape)) for i in list(theta1_mats.keys())}
+        for i in list(theta1_max_masks.keys()):
+            theta1_max_masks[i][(np.arange(theta1_mats[i].shape[0]), theta1_mats[i].values.argmax(axis=1))] = 1
+
+        theta1_certain_mats = {i:((theta1_mats[i]*theta1_max_masks[i]).iloc[np.where(((theta1_mats[i].values * theta1_max_masks[i]).sum(axis=1)) >= self.alpha_2)]) for i in list(theta1_mats.keys())}
+        theta1_uncertain_mats = {i:((theta1_mats[i]*theta1_max_masks[i]).iloc[np.where(((theta1_mats[i].values * theta1_max_masks[i]).sum(axis=1)) < self.alpha_2)]) for i in list(theta1_mats.keys())}
+
+        for i in list(merge_infos.keys()):
+            for j in tqdm(range(theta1_uncertain_mats[i].shape[0]), desc=(i + " Hard Clustering")):
+                add_uncertain_member(theta1_certain_mats[i], theta1_uncertain_mats[i], theta1_mats[i], theta1_clusters[i], j)
+        
+        for key in list(theta1_certain_mats.keys()):
+            save_path = os.path.join(self.final_path, key)
+            save_final_results(save_path, theta1_certain_mats[key])
+        
+        print("[INFO] Saving final results.")
