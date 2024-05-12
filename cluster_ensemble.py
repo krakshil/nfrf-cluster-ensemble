@@ -303,6 +303,7 @@ class ClusterEnsemble:
                 iters = [list(merge_dicts[key].keys())[-1] for key in list(merge_dicts.keys())]
             new_matrices = {}
             for key in list(merge_dicts.keys()):
+                new_matrices[key] = dict()
                 for combination_name, cluster_combination in merge_dicts[key][str(iters[key])].items():        
                     new_matrices[key][combination_name] = matrices[key][cluster_combination].sum(axis=1)
                 new_matrices[key] = pd.DataFrame(new_matrices[key])
