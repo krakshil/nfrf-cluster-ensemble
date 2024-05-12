@@ -316,7 +316,7 @@ class ClusterEnsemble:
 
         def add_uncertain_member(certain_mat, uncertain_mat, mat, clusters, idx):
             clusters_oi = mat.columns[mat.loc[uncertain_mat.iloc[idx].name] > 0].tolist()
-            quality_diff = (get_cluster_quality(certain_mat.append(mat.loc[uncertain_mat.iloc[idx].name], ignore_index=False)[clusters_oi]) - get_cluster_quality(certain_mat[clusters_oi]))
+            quality_diff = (get_cluster_quality(certain_mat._append(mat.loc[uncertain_mat.iloc[idx].name], ignore_index=False)[clusters_oi]) - get_cluster_quality(certain_mat[clusters_oi]))
             new_row = {cluster:0 for cluster in clusters}
             new_row[quality_diff.index[quality_diff.argmin()]] = (mat.loc[uncertain_mat.iloc[idx].name])[quality_diff.index[quality_diff.argmin()]]
             certain_mat.loc[uncertain_mat.iloc[idx].name] = new_row
