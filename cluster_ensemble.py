@@ -377,7 +377,7 @@ class ClusterEnsemble:
             alphas_dict[embedding_model] = alphas
 
         print("[INFO] Enforcing hard clustering...")
-        last_iters = [list(merge_infos[key].keys())[-1] for key in list(merge_infos.keys())]
+        last_iters = {key:(list(merge_infos[key].keys())[-1]) for key in list(merge_infos.keys())}
 
         membership_dfs = get_membership_df(merge_infos, self.membership_matrices, last_iters)
         membership_mats = {key:(membership_dfs[key].div(membership_dfs[key].sum(axis=1), axis=0)) for key in list(membership_dfs.keys())}
