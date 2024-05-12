@@ -265,7 +265,7 @@ class ClusterEnsemble:
         def merge_clusters(merge_dict, matrix, iter=1):
             new_matrix = {}
             for combination_name, cluster_combination in merge_dict[iter].items():        
-                new_matrix[combination_name] = (matrix[cluster_combination].sum(axis=1).apply(lambda x: 0 if x<1 else 1))
+                new_matrix[combination_name] = (matrix[cluster_combination].sum(axis=1)) #.apply(lambda x: 0 if x<1 else 1))
             new_matrix = pd.DataFrame(new_matrix)
             return new_matrix
 
