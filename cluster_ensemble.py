@@ -210,27 +210,28 @@ class ClusterEnsemble:
             return membership_df
         
         def get_cluster_similarity(matrix, iter=1):
-            columns = matrix.columns
-            matrix_vals = matrix.values
-            columns_cluster = list(map(lambda x: int(x.split("_")[0]), columns)) if iter==1 else None
-            current_k = matrix.shape[1]
-            c_s = np.zeros((current_k, current_k))+(-2)
+            # columns = matrix.columns
+            # matrix_vals = matrix.values
+            # columns_cluster = list(map(lambda x: int(x.split("_")[0]), columns)) if iter==1 else None
+            # current_k = matrix.shape[1]
+            # c_s = np.zeros((current_k, current_k))+(-2)
             
-            if iter==1:
-                with tqdm(total=((current_k*(current_k-1)/2)), desc="Iteration - " + str(iter) + ", C_S Progress") as pbar:
-                    for i in range(current_k):
-                        for j in range(i+1,current_k):
-                            if (columns_cluster[i] != columns_cluster[j]):
-                                c_s[i,j] = cluster_similarity(matrix_vals[:, i], matrix_vals[:, j])
-                            pbar.update(1)
-            else:
-                with tqdm(total=((current_k*(current_k-1)/2)), desc="Iteration - " + str(iter) + ", C_S Progress") as pbar:
-                    for i in range(current_k):
-                        for j in range(i+1,current_k):
-                            if (i!=j):
-                                c_s[i,j] = cluster_similarity(matrix_vals[:, i], matrix_vals[:, j])
-                            pbar.update(1)
-            return c_s
+            # if iter==1:
+            #     with tqdm(total=((current_k*(current_k-1)/2)), desc="Iteration - " + str(iter) + ", C_S Progress") as pbar:
+            #         for i in range(current_k):
+            #             for j in range(i+1,current_k):
+            #                 if (columns_cluster[i] != columns_cluster[j]):
+            #                     c_s[i,j] = cluster_similarity(matrix_vals[:, i], matrix_vals[:, j])
+            #                 pbar.update(1)
+            # else:
+            #     with tqdm(total=((current_k*(current_k-1)/2)), desc="Iteration - " + str(iter) + ", C_S Progress") as pbar:
+            #         for i in range(current_k):
+            #             for j in range(i+1,current_k):
+            #                 if (i!=j):
+            #                     c_s[i,j] = cluster_similarity(matrix_vals[:, i], matrix_vals[:, j])
+            #                 pbar.update(1)
+            # return c_s
+            return np.triu(np.corrcoef(matrix.astype("int").values.T), k=1) + np.tril((np.zeros(matrix.shape[1])-2), k=0)
 
         def get_merge_dict(c_s, columns, alpha_01, iter=1):
             cluster_merge = {}
