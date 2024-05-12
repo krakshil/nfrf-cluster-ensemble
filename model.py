@@ -34,7 +34,7 @@ class CustomSpectralClustering:
     def predict(self, X_new):
         return self.classifier.predict(X_new)
 
-
+## Gaussian Mixture
 class CustomGaussianMixture:
     def __init__(self, n_components=5, **kwargs):
         self.model = GaussianMixture(n_components=n_components, **kwargs)
@@ -45,6 +45,21 @@ class CustomGaussianMixture:
 
     def predict(self, X_new):
         return self.model.predict(X_new)
+
+## Ensemble
+class customEnsemble:
+    def __init__(self, path="", n_neighbors=10):
+        self.path = path
+        self.mat = pd.read_csv(os.path.join(path, "ensemble_hard_clusters.csv")).sort_values(by="index").drop(["index"], axis=1)
+        self.classifier = KNeighborsClassifier(n_neighbors=n_neighbors)
+    
+    def fit(self, X):
+        self.labels_ = self.mat.values.argmax(axis=1)
+        self.classifier.fit(X, self.labels_)
+        return self
+
+    def predict(self, X_new):
+        return self.classifier.predict(X_new)
 
 
 ## model definition
