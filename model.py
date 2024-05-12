@@ -185,7 +185,8 @@ class topicModel():
                     self.clustering_config[cluster_model_name]["params_grid"] = params_grid
                 
                 for param_combo in tqdm(self.clustering_config[cluster_model_name]["params_grid"], desc = model_name + ", " + cluster_model_name):
-                    cluster_model = constructor(**param_combo)
+                    # cluster_model = constructor(**param_combo) # normal clustering
+                    cluster_model = constructor(**{**{"path": os.path.join("data", "results", "cluster_ensemble","final_merge", model_name)}, **param_combo}) # ensemble clustering 
 
                     topic_model, (train_labels, train_probs) = self.fit(self.train_docs, train_features, empty_dimensionality_model, cluster_model, vectorizer_model, ctfidf_model, representation_model, verbose=verbose)
                     save_name = ", ".join(str(key) + "=" + str(value) for (key, value) in param_combo.items())

@@ -62,7 +62,7 @@ embedding_config = {
 # }
 
 clustering_config = {
-    "ensemble": {"constructor":customEnsemble, "type":"ensemble", "params_dict":{"path":[], "n_neighbors":[5, 10, 15, 20, 25, 30, 35]}},
+    "ensemble": {"constructor":customEnsemble, "type":"ensemble", "params_dict":{"n_neighbors":[5, 10, 15, 20, 25, 30, 35]}},
 }
 
 vectorizer_config = None
