@@ -19,7 +19,8 @@ train_docs = pd.read_excel(os.path.join(data_dir, train_file))["Follow - up Ques
 test_docs = pd.read_excel(os.path.join(data_dir, test_file))["Follow - up Question"].values.tolist()
 
 # save_dir = "data"
-save_dir = os.path.join("data","results","cluster_ensemble", "final")
+# save_dir = os.path.join("data","results","cluster_ensemble", "final")
+save_dir = os.path.join("data","results","baseline")
 
 # ## Add hyper-parameter combinations for embedding selection
 # embedding_selection_config = {
