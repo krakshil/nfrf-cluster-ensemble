@@ -154,6 +154,9 @@ class ClusterEnsemble:
                 paths = []
                 for clustering_model in clustering_names:
                     scores.extend(np.load(os.path.join(self.members_dir, embedding_model, clustering_model, "scores.npy")).tolist())
+                    print(os.path.exists(os.path.join(self.members_dir, embedding_model, clustering_model, "scores.npy")))
+                    print(np.load(os.path.join(self.members_dir, embedding_model, clustering_model, "scores.npy")).shape)
+                    print(len(scores))
                     with open(os.path.join(self.members_dir, embedding_model, clustering_model, "params_combo.json"), "r") as f:
                         variants = json.load(f)
                     variants = list(map(lambda x: os.path.join(self.partial_path, embedding_model, clustering_model, "preds", "train", x+".csv"), variants))
