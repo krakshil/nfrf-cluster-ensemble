@@ -180,16 +180,12 @@ class ClusterEnsemble:
                 cluster_index_dict = {}
                 cluster_idx = 0
 
-                sorted_idx = normalized_dict[embedding_model].argsort()
+                sorted_idx = normalized_dict[embedding_model][:,1].argsort()
+                print(sorted_idx.shape)
                 idx_of_interest = sorted_idx[-n_threshold:]
                 paths_of_interest = paths_dict[embedding_model][idx_of_interest]
 
-                print(len(paths), paths[0], scores.shape)
-                # print(paths_of_interest)
-
                 for path_idx, path in enumerate(paths_of_interest):
-                    if not os.path.exists(path):
-                        print(path_idx, path)
                     cluster_preds = pd.read_csv(path)["predictions"]
                     one_hot_preds = pd.get_dummies(cluster_preds, prefix=str(cluster_idx))
                     membership_matrix.append(one_hot_preds)
