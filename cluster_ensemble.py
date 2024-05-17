@@ -141,7 +141,7 @@ class ClusterEnsemble:
             embedding_names = os.listdir(self.partial_path)
             
             #### n-best
-            clustering_names = list(filter(lambda x: False if "." in x else False, os.listdir(os.path.join(self.partial_path, embedding_model[0]))))
+            clustering_names = list(filter(lambda x: False if "." in x else False, os.listdir(os.path.join(self.partial_path, embedding_names[0]))))
 
             scores_dict = dict()
             normalized_dict = dict()
