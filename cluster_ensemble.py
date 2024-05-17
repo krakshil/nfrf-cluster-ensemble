@@ -131,52 +131,116 @@ class ClusterEnsemble:
 
 
     ## Combine all the partial matrix of memberships
-    def combine_partial_membership_matrix(self, num_min_clusters=7, num_max_clusters=15, load=False):
+    def combine_partial_membership_matrix(self, ver=0, n_threshold=100, num_min_clusters=7, num_max_clusters=15, load=False):
+        
+        def normalize(value, min_val, max_val):
+            return ((value - min_val) / (max_val - min_val))
         
         if not load:
             print("[INFO] Loading Partial Membership Matrix for all members...")
             embedding_names = os.listdir(self.partial_path)
             
+            #### n-best
+            clustering_names = list(filter(lambda x: False if "." in x else False, os.listdir(os.path.join(self.partial_path, embedding_model[0]))))
+
+            scores_dict = dict()
+            normalized_dict = dict()
+            paths_dict = dict()
 
             for embedding_model in embedding_names:
-                
+
                 print("[INFO] Model: " + embedding_model + "...")
+                scores = []
+                paths = []
+                for clustering_model in clustering_names:
+                    scores.extend(np.load(os.path.join(self.members_dir, embedding_model, clustering_model, "scores.npy")).tolist())
+                    with open(os.path.join(self.members_dir, embedding_model, clustering_model, "params_combo.json"), "r") as f:
+                        variants = json.load(f)
+                    variants = list(map(lambda x: os.path.join(self.partial_path, embedding_model, clustering_model, "preds", "train", x+".csv"), variants))
+                    
+                    paths.extend(variants)
+                
+                scores = np.array(scores)
+                
+                normalized_scores = scores.copy()
+                normalized_scores[:,:, 1] = np.divide(1,np.add(1, normalized_scores[:,:, 1]))
+                max_c_score, min_c_score = normalized_scores[:,:, 2].max(), normalized_scores[:,:, 2].min()
+                normalize_vfunc = np.vectorize(normalize)
+                normalized_scores[:, :, 2] = normalize_vfunc(normalized_scores[:, :, 2], min_c_score, max_c_score)
+                normalized_scores = np.sum(normalized_scores, axis=2)
+
+                scores_dict[embedding_model] = scores
+                normalized_dict[embedding_model] = normalized_scores
+                paths_dict[embedding_model] = np.array(paths)
+
+                model_path = os.path.join(self.complete_path, "v"+str(ver), embedding_model)
+                os.makedirs(model_path, exist_ok=True)
 
                 membership_matrix = []
                 cluster_index_dict = {}
                 cluster_idx = 0
-                
-                model_path = os.path.join(self.complete_path, embedding_model)
-                os.makedirs(model_path, exist_ok=True)
 
-                clustering_names = os.listdir(os.path.join(self.partial_path, embedding_model))
-                
-                for cluster_model in clustering_names:
-                    cluster_model_path = os.path.join(self.partial_path, embedding_model, cluster_model)
-                    cluster_variant_names = os.listdir(os.path.join(cluster_model_path, "info"))
-                    
-                    info_path = os.path.join(cluster_model_path, "info")
-                    train_path = os.path.join(cluster_model_path, "preds", "train")
-                    test_path = os.path.join(cluster_model_path, "preds", "test")
+                sorted_idx = normalized_dict[embedding_model].argsort()
+                idx_of_interest = sorted_idx[-n_threshold:]
+                paths_of_interest = paths_dict[embedding_model][idx_of_interest]
 
-                    for model_variant in tqdm(cluster_variant_names, desc=(embedding_model + ", " + cluster_model)):
-                        # self.save_matrix_from_model(train_features=train_features, test_features=test_features, embedding_model_name=embedding_model, cluster_model_name=cluster_model, variant_name=model_variant)
-                        clusters = pd.read_csv(os.path.join(info_path, model_variant))["Topic"].values
-                        cluster_preds = pd.read_csv(os.path.join(train_path, model_variant))["predictions"]
-                        
-                        if num_max_clusters >= clusters.shape[0] >= num_min_clusters:
-                            one_hot_preds = pd.get_dummies(cluster_preds, prefix=str(cluster_idx))
-                            membership_matrix.append(one_hot_preds)
-                            cluster_index_dict[cluster_idx] = [embedding_model, cluster_model, model_variant]
-                            cluster_idx += 1
-            
+                for path in paths_of_interest:
+                    cluster_preds = pd.read_csv(path)["predictions"]
+                    one_hot_preds = pd.get_dummies(cluster_preds, prefix=str(cluster_idx))
+                    membership_matrix.append(one_hot_preds)
+                    cluster_index_dict[cluster_idx] = path
+                    cluster_idx += 1
+                
                 with open(os.path.join(model_path, "meta_info.json"), "w") as f:
                     json.dump(cluster_index_dict, f)
 
                 membership_matrix = pd.concat(membership_matrix, axis=1)
                 membership_matrix.to_csv(os.path.join(model_path, "matrix.csv"), index=False)
                 self.membership_matrices[embedding_model] = membership_matrix
+            
             print("[INFO] Complete Membership matrix saved.")
+
+
+            # for embedding_model in embedding_names:
+                
+            #     print("[INFO] Model: " + embedding_model + "...")
+
+            #     membership_matrix = []
+            #     cluster_index_dict = {}
+            #     cluster_idx = 0
+                
+            #     model_path = os.path.join(self.complete_path, "v"+str(ver), embedding_model)
+            #     os.makedirs(model_path, exist_ok=True)
+
+
+            #     clustering_names = os.listdir(os.path.join(self.partial_path, embedding_model))
+                
+            #     for cluster_model in clustering_names:
+            #         cluster_model_path = os.path.join(self.partial_path, embedding_model, cluster_model)
+            #         cluster_variant_names = os.listdir(os.path.join(cluster_model_path, "info"))
+                    
+            #         info_path = os.path.join(cluster_model_path, "info")
+            #         train_path = os.path.join(cluster_model_path, "preds", "train")
+            #         test_path = os.path.join(cluster_model_path, "preds", "test")
+
+            #         for model_variant in tqdm(cluster_variant_names, desc=(embedding_model + ", " + cluster_model)):
+            #             # self.save_matrix_from_model(train_features=train_features, test_features=test_features, embedding_model_name=embedding_model, cluster_model_name=cluster_model, variant_name=model_variant)
+            #             clusters = pd.read_csv(os.path.join(info_path, model_variant))["Topic"].values
+            #             cluster_preds = pd.read_csv(os.path.join(train_path, model_variant))["predictions"]
+                        
+            #             if num_max_clusters >= clusters.shape[0] >= num_min_clusters:
+            #                 one_hot_preds = pd.get_dummies(cluster_preds, prefix=str(cluster_idx))
+            #                 membership_matrix.append(one_hot_preds)
+            #                 cluster_index_dict[cluster_idx] = [embedding_model, cluster_model, model_variant]
+            #                 cluster_idx += 1
+            
+            #     with open(os.path.join(model_path, "meta_info.json"), "w") as f:
+            #         json.dump(cluster_index_dict, f)
+
+            #     membership_matrix = pd.concat(membership_matrix, axis=1)
+            #     membership_matrix.to_csv(os.path.join(model_path, "matrix.csv"), index=False)
+            #     self.membership_matrices[embedding_model] = membership_matrix
+            # print("[INFO] Complete Membership matrix saved.")
 
         else:
             print("[INFO] Loading Complete Membership Matrix for all embedding models...")
