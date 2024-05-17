@@ -55,6 +55,7 @@ class customEnsemble:
     
     def fit(self, X, y):
         self.labels_ = self.mat.values.argmax(axis=1)
+        print(X.shape, self.labels_.shape)
         self.classifier.fit(X, self.labels_)
         return self
 
