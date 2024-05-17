@@ -19,8 +19,8 @@ train_docs = pd.read_excel(os.path.join(data_dir, train_file))["Follow - up Ques
 test_docs = pd.read_excel(os.path.join(data_dir, test_file))["Follow - up Question"].values.tolist()
 
 # save_dir = "data"
-# save_dir = os.path.join("data","results","cluster_ensemble", "final")
-save_dir = os.path.join("data","results","baseline")
+save_dir = os.path.join("data","results","cluster_ensemble", "final", "v1")
+# save_dir = os.path.join("data","results","baseline")
 
 # ## Add hyper-parameter combinations for embedding selection
 # embedding_selection_config = {
@@ -71,21 +71,21 @@ ctfidf_config = None
 representation_config = None
 
 
-#topic_model = topicModel(train_docs=train_docs, test_docs=test_docs, embedding_config=embedding_config, clustering_config=clustering_config, vectorizer_config=vectorizer_config, ctfidf_config=ctfidf_config, representation_config=representation_config, save_dir=save_dir)
+topic_model = topicModel(train_docs=train_docs, test_docs=test_docs, embedding_config=embedding_config, clustering_config=clustering_config, vectorizer_config=vectorizer_config, ctfidf_config=ctfidf_config, representation_config=representation_config, ver=1, save_dir=save_dir)
 # # topic_model = topicModel(train_docs=train_docs, test_docs=test_docs, embedding_selection_config=embedding_selection_config, save_dir=save_dir)
 # # topic_model.run_selection()
-# topic_model.run(load_embeddings=True)
-# topic_model.get_evaluation_scores(load_embeddings=True, gt_dir="data")
-# topic_model.save_best_scores()
+topic_model.run(load_embeddings=True)
+topic_model.get_evaluation_scores(load_embeddings=True, gt_dir="data")
+topic_model.save_best_scores()
 
-ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir, save_dir=os.path.join("data","results"))
-# # ensemble_model.get_partial_membership()
-ensemble_model.combine_partial_membership_matrix(ver=1, n_threshold=10, load=False)
-print("\n\n")
-total_clusters = 0
-for key, matrix in ensemble_model.membership_matrices.items():
-    total_clusters += matrix.shape[1]
-    print(key + ": ", matrix.shape)
+# ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir, save_dir=os.path.join("data","results"))
+# # # ensemble_model.get_partial_membership()
+# ensemble_model.combine_partial_membership_matrix(ver=1, n_threshold=10, load=False)
+# print("\n\n")
+# total_clusters = 0
+# for key, matrix in ensemble_model.membership_matrices.items():
+#     total_clusters += matrix.shape[1]
+#     print(key + ": ", matrix.shape)
 
-print("\nTotal Clusters: " + str(total_clusters) + "\n\n")
-ensemble_model.consensus_fn(ver=1, load=False)
+# print("\nTotal Clusters: " + str(total_clusters) + "\n\n")
+# ensemble_model.consensus_fn(ver=1, load=False)
