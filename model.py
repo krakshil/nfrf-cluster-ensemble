@@ -53,7 +53,7 @@ class customEnsemble:
         self.mat = pd.read_csv(os.path.join(path, "ensemble_hard_clusters.csv")).sort_values(by="index").drop(["index"], axis=1)
         self.classifier = KNeighborsClassifier(n_neighbors=n_neighbors)
     
-    def fit(self, X):
+    def fit(self, X, y):
         self.labels_ = self.mat.values.argmax(axis=1)
         self.classifier.fit(X, self.labels_)
         return self
