@@ -143,7 +143,7 @@ class topicModel():
     def fit(self, docs, embeddings, umap_model, clustering_model, vectorizer_model, ctfidf_model, representation_model, verbose=False):
         
         topic_model = BERTopic(umap_model=umap_model, hdbscan_model=clustering_model, vectorizer_model=vectorizer_model, ctfidf_model=ctfidf_model, representation_model=representation_model, calculate_probabilities=True, low_memory=True, verbose=verbose)
-        
+        print(embeddings.shape)
         labels, probs = topic_model.fit_transform(docs, embeddings=embeddings)
         # freqs = topic_model.get_topic_info()
         # tops = topic_model.get_topics()
