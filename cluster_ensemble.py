@@ -161,6 +161,7 @@ class ClusterEnsemble:
                     paths.extend(variants)
                 
                 scores = np.array(scores)
+                print(scores.shape)
                 
                 normalized_scores = scores.copy()
                 normalized_scores[:,:, 1] = np.divide(1,np.add(1, normalized_scores[:,:, 1]))
