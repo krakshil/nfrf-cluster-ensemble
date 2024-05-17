@@ -184,7 +184,8 @@ class ClusterEnsemble:
                 idx_of_interest = sorted_idx[-n_threshold:]
                 paths_of_interest = paths_dict[embedding_model][idx_of_interest]
 
-                print(paths_of_interest)
+                print(len(paths), paths[0], scores.shape)
+                # print(paths_of_interest)
 
                 for path_idx, path in enumerate(paths_of_interest):
                     if not os.path.exists(path):
