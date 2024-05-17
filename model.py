@@ -26,7 +26,7 @@ class CustomSpectralClustering:
         self.model = SpectralClustering(n_clusters=n_clusters, **kwargs)
         self.classifier = KNeighborsClassifier(n_neighbors=10)
 
-    def fit(self, X):
+    def fit(self, X, y):
         self.labels_ = self.model.fit_predict(X)
         self.classifier.fit(X, self.labels_)
         return self
