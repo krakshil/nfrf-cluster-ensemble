@@ -88,4 +88,4 @@ for key, matrix in ensemble_model.membership_matrices.items():
     print(key + ": ", matrix.shape)
 
 print("\nTotal Clusters: " + str(total_clusters) + "\n\n")
-ensemble_model.consensus_fn(load=True)
+ensemble_model.consensus_fn(ver=1, load=False)

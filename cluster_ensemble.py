@@ -183,7 +183,7 @@ class ClusterEnsemble:
 
                 sorted_idx = normalized_dict[embedding_model][:,1].argsort()
                 idx_of_interest = sorted_idx[-n_threshold:]
-                print(normalized_scores[sorted_idx[0],1], normalized_scores[sorted_idx[-1],1])
+                # print(normalized_scores[sorted_idx[0],1], normalized_scores[sorted_idx[-1],1])
                 paths_of_interest = paths_dict[embedding_model][idx_of_interest]
 
                 for path_idx, path in enumerate(paths_of_interest):
@@ -255,7 +255,7 @@ class ClusterEnsemble:
 
 
     ## Consensus function
-    def consensus_fn(self, load=False):
+    def consensus_fn(self, ver=0, load=False):
         
         def cluster_similarity(c1, c2):
             n = c1.shape[0]
@@ -428,7 +428,7 @@ class ClusterEnsemble:
                             current_k = matrix_interim.shape[1]
                             iter += 1
 
-                save_path = os.path.join(self.final_path, embedding_model)
+                save_path = os.path.join(self.final_path, "v"+str(ver), embedding_model)
                 save_ensemble_results(path=save_path, matrix=matrix_interim, merge_dict=merge_dict, alphas=alphas)
                 print("[INFO] Saved soft ensemble clusters and merge dict.")
 
@@ -437,7 +437,7 @@ class ClusterEnsemble:
         final_clusters = dict()
         alphas_dict = dict()
         for embedding_model in list(self.membership_matrices.keys()):
-            load_path = os.path.join(self.final_path, embedding_model)
+            load_path = os.path.join(self.final_path, "v"+str(ver), embedding_model)
             matrix, merge_dict, alphas = load_ensemble_results(load_path)
             merge_infos[embedding_model] = merge_dict
             final_clusters[embedding_model] = matrix
@@ -473,7 +473,7 @@ class ClusterEnsemble:
                 add_uncertain_member(theta1_certain_mats[i], theta1_uncertain_mats[i], theta1_mats[i], theta1_clusters[i], j)
         
         for key in list(theta1_certain_mats.keys()):
-            save_path = os.path.join(self.final_path, key)
+            save_path = os.path.join(self.final_path, "v"+str(ver), key)
             save_final_results(save_path, theta1_certain_mats[key])
         
         print("[INFO] Saving final results.")
