@@ -248,7 +248,7 @@ class ClusterEnsemble:
 
             for embedding_model in embedding_names:
                 print("[INFO] Model: " + embedding_model + "...")
-                self.membership_matrices[embedding_model] = pd.read_csv(os.path.join(self.complete_path, embedding_model ,"matrix.csv"))
+                self.membership_matrices[embedding_model] = pd.read_csv(os.path.join(self.complete_path, "v"+str(ver), embedding_model ,"matrix.csv"))
             print("[INFO] Complete Membership matrix loaded.")
 
 
