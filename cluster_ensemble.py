@@ -141,7 +141,7 @@ class ClusterEnsemble:
             embedding_names = os.listdir(self.partial_path)
             
             #### n-best
-            clustering_names = list(filter(lambda x: False if "." in x else False, os.listdir(os.path.join(self.partial_path, embedding_names[0]))))
+            clustering_names = list(filter(lambda x: False if "." in x else True, os.listdir(os.path.join(self.partial_path, embedding_names[0]))))
 
             scores_dict = dict()
             normalized_dict = dict()
@@ -154,9 +154,6 @@ class ClusterEnsemble:
                 paths = []
                 for clustering_model in clustering_names:
                     scores.extend(np.load(os.path.join(self.members_dir, embedding_model, clustering_model, "scores.npy")).tolist())
-                    print(os.path.exists(os.path.join(self.members_dir, embedding_model, clustering_model, "scores.npy")))
-                    print(np.load(os.path.join(self.members_dir, embedding_model, clustering_model, "scores.npy")).shape)
-                    print(len(scores))
                     with open(os.path.join(self.members_dir, embedding_model, clustering_model, "params_combo.json"), "r") as f:
                         variants = json.load(f)
                     variants = list(map(lambda x: os.path.join(self.partial_path, embedding_model, clustering_model, "preds", "train", x+".csv"), variants))
@@ -164,7 +161,6 @@ class ClusterEnsemble:
                     paths.extend(variants)
                 
                 scores = np.array(scores)
-                print(scores.shape)
                 
                 normalized_scores = scores.copy()
                 normalized_scores[:,:, 1] = np.divide(1,np.add(1, normalized_scores[:,:, 1]))
