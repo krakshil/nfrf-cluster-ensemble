@@ -71,7 +71,7 @@ vectorizer_config = None
 ctfidf_config = None
 representation_config = None
 
-ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir_en, min_alpha_1 = 0.65, alpha_2=0.5, save_dir=os.path.join("data","results"))
+ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir_en, min_alpha_1 = 0.4, alpha_2=0.5, save_dir=os.path.join("data","results"))
 # # ensemble_model.get_partial_membership()
 ensemble_model.combine_partial_membership_matrix(ver=3, n_threshold=50, load=False)
 print("\n\n")
