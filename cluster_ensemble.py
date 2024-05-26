@@ -171,7 +171,7 @@ class ClusterEnsemble:
 
                 
                 scores_dict[embedding_model] = scores
-                normalized_dict[embedding_model] = normalized_scores[:, :, 0]
+                normalized_dict[embedding_model] = normalized_scores[:, :, 1]
                 paths_dict[embedding_model] = np.array(paths)
 
                 model_path = os.path.join(self.complete_path, "v"+str(ver), embedding_model)
