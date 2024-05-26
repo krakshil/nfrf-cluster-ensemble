@@ -73,7 +73,7 @@ representation_config = None
 
 ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir_en, min_alpha_1 = 0.4, alpha_2=0.3, save_dir=os.path.join("data","results"))
 # # ensemble_model.get_partial_membership()
-ensemble_model.combine_partial_membership_matrix(ver=5, n_threshold=150, load=False)
+ensemble_model.combine_partial_membership_matrix(ver=5, n_threshold=200, load=False)
 print("\n\n")
 total_clusters = 0
 for key, matrix in ensemble_model.membership_matrices.items():
