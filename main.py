@@ -19,7 +19,7 @@ train_docs = pd.read_excel(os.path.join(data_dir, train_file))["Follow - up Ques
 test_docs = pd.read_excel(os.path.join(data_dir, test_file))["Follow - up Question"].values.tolist()
 
 # save_dir = "data"
-save_dir = os.path.join("data","results","cluster_ensemble", "final", "v2")
+save_dir = os.path.join("data","results","cluster_ensemble", "final", "v3")
 
 save_dir_en = os.path.join("data","results","baseline")
 
@@ -73,14 +73,14 @@ representation_config = None
 
 ensemble_model = ClusterEnsemble(train_docs=train_docs, test_docs=test_docs, members_dir=save_dir_en, save_dir=os.path.join("data","results"))
 # # ensemble_model.get_partial_membership()
-ensemble_model.combine_partial_membership_matrix(ver=2, n_threshold=220, load=False)
+ensemble_model.combine_partial_membership_matrix(ver=3, n_threshold=100, load=False)
 print("\n\n")
 total_clusters = 0
 for key, matrix in ensemble_model.membership_matrices.items():
     total_clusters += matrix.shape[1]
     print(key + ": ", matrix.shape)
 print("\nTotal Clusters: " + str(total_clusters) + "\n\n")
-ensemble_model.consensus_fn(ver=2, load=False)
+ensemble_model.consensus_fn(ver=3, load=False)
 
 
 topic_model = topicModel(train_docs=train_docs, test_docs=test_docs, embedding_config=embedding_config, clustering_config=clustering_config, vectorizer_config=vectorizer_config, ctfidf_config=ctfidf_config, representation_config=representation_config, ver=2, save_dir=save_dir)

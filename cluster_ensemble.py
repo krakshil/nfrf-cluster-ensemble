@@ -167,11 +167,11 @@ class ClusterEnsemble:
                 max_c_score, min_c_score = normalized_scores[:,:, 2].max(), normalized_scores[:,:, 2].min()
                 normalize_vfunc = np.vectorize(normalize)
                 normalized_scores[:, :, 2] = normalize_vfunc(normalized_scores[:, :, 2], min_c_score, max_c_score)
-                normalized_scores = np.sum(normalized_scores, axis=2)
+                # normalized_scores = np.sum(normalized_scores, axis=2)
 
                 
                 scores_dict[embedding_model] = scores
-                normalized_dict[embedding_model] = normalized_scores
+                normalized_dict[embedding_model] = normalized_scores[:, :, 0]
                 paths_dict[embedding_model] = np.array(paths)
 
                 model_path = os.path.join(self.complete_path, "v"+str(ver), embedding_model)
