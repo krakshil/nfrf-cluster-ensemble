@@ -358,7 +358,7 @@ class topicModel():
                 best_score_index = np.argmax(normalized_scores[:, 1, 0])
 
                 best_parameter_combo = params_combo[best_score_index]
-                best_score = normalized_scores[best_score_index, 1].tolist()
+                best_score = normalized_scores[best_score_index, 1, 0]
 
                 best_scores[model_name][cluster_model_name] = {best_parameter_combo:{"best_score":best_score, "train_scores": scores[best_score_index, 0].tolist(), "test_scores": scores[best_score_index, 1].tolist()}}
         
