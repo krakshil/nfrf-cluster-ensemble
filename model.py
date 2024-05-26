@@ -353,8 +353,9 @@ class topicModel():
                 normalize_vfunc = np.vectorize(normalize)
                 normalized_scores[:, :, 2] = normalize_vfunc(normalized_scores[:, :, 2], min_c_score, max_c_score)
 
-                normalized_scores = np.sum(normalized_scores, axis=2)
-                best_score_index = np.argmax(normalized_scores[:, 1])
+                #### For cluster ensemble
+                # normalized_scores = np.sum(normalized_scores, axis=2)
+                best_score_index = np.argmax(normalized_scores[:, 1, 0])
 
                 best_parameter_combo = params_combo[best_score_index]
                 best_score = normalized_scores[best_score_index, 1]
